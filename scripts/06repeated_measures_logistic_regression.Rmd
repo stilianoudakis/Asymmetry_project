@@ -1,0 +1,745 @@
+---
+title: "Repeated Measures Logistic Regression"
+author: "Spiro Stilianoudakis"
+date: "April 26, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Loading Packages
+
+```{r}
+library(dplyr)
+library(lme4)
+library(car)
+```
+
+# Set working directory
+
+```{r}
+setwd("X:/CommonPrograms/Oral Health Services Research Core/Spiro/Asymmetry")
+```
+
+
+# Reading in stacked dataset
+
+```{r}
+asymmetry <- readRDS("stacked_all.rds")
+asymmetry$correct <- relevel(asymmetry$correct, ref = 1)
+
+#continuous repeated measures variable
+asymmetry$asymmetry_cont <- as.numeric(gsub("mm","",asymmetry$asymmetry))
+  
+#attach(asymmetry)
+```
+
+# Frequency tables
+
+## Ignoring image gender
+
+```{r}
+#sample sizes
+table(asymmetry$respondent_group,asymmetry$asymmetry,asymmetry$gender_photo)
+
+#table of responses (ignoring gender of photo)
+table(asymmetry$correct, asymmetry$respondent_group, asymmetry$asymmetry)
+
+#column percentages across each repeated measure (ignoring gender of photo)
+prop.table(table(asymmetry$correct, asymmetry$respondent_group, asymmetry$asymmetry)[,,1],2)
+prop.table(table(asymmetry$correct, asymmetry$respondent_group, asymmetry$asymmetry)[,,2],2)
+prop.table(table(asymmetry$correct, asymmetry$respondent_group, asymmetry$asymmetry)[,,3],2)
+prop.table(table(asymmetry$correct, asymmetry$respondent_group, asymmetry$asymmetry)[,,4],2)
+prop.table(table(asymmetry$correct, asymmetry$respondent_group, asymmetry$asymmetry)[,,5],2)
+prop.table(table(asymmetry$correct, asymmetry$respondent_group, asymmetry$asymmetry)[,,6],2)
+prop.table(table(asymmetry$correct, asymmetry$respondent_group, asymmetry$asymmetry)[,,7],2)
+
+#percentage of correct responses (ignoring gender of photo)
+tab1 <- table(asymmetry$correct, asymmetry$respondent_group, asymmetry$asymmetry)
+propcorrect1mm <- prop.table(tab1[,,1],2)
+propcorrect1.5mm <- prop.table(tab1[,,2],2)
+propcorrect2mm <- prop.table(tab1[,,3],2)
+propcorrect2.5mm <- prop.table(tab1[,,4],2)
+propcorrect3mm <- prop.table(tab1[,,5],2)
+propcorrect3.5mm <- prop.table(tab1[,,6],2)
+propcorrect4mm <- prop.table(tab1[,,7],2)
+
+PercentageCorrect <- rbind(propcorrect1mm[2,],
+                           propcorrect1.5mm[2,],
+                           propcorrect2mm[2,],
+                           propcorrect2.5mm[2,],
+                           propcorrect3mm[2,],
+                           propcorrect3.5mm[2,],
+                           propcorrect4mm[2,])
+PercentageCorrect <- rbind(cbind(c(table(cliniciandata_comp$male_sym.factor)[2]+table(cliniciandata_comp$female_symm.factor)[2])/sum(table(cliniciandata_comp$male_sym.factor)+table(cliniciandata_comp$female_symm.factor)),c(table(studentdata_comp$male_sym.factor)[2]+table(studentdata_comp$female_symm.factor)[2])/sum(table(studentdata_comp$male_sym.factor)+table(studentdata_comp$female_symm.factor))),
+                           PercentageCorrect)
+rownames(PercentageCorrect) <- c("Symmetric", "1mm", "1.5mm", "2mm", "2.5mm", "3mm", "3.5mm", "4mm")
+```
+
+## With image gender
+
+### Male
+
+```{r}
+asymmetry_male <- asymmetry[which(asymmetry$gender_photo=="Male"),]
+
+#table of responses (ignoring gender of photo)
+table(asymmetry_male$correct, asymmetry_male$respondent_group, asymmetry_male$asymmetry)
+
+#column percentages across each repeated measure (ignoring gender of photo)
+prop.table(table(asymmetry_male$correct, asymmetry_male$respondent_group, asymmetry_male$asymmetry)[,,1],2)
+prop.table(table(asymmetry_male$correct, asymmetry_male$respondent_group, asymmetry_male$asymmetry)[,,2],2)
+prop.table(table(asymmetry_male$correct, asymmetry_male$respondent_group, asymmetry_male$asymmetry)[,,3],2)
+prop.table(table(asymmetry_male$correct, asymmetry_male$respondent_group, asymmetry_male$asymmetry)[,,4],2)
+prop.table(table(asymmetry_male$correct, asymmetry_male$respondent_group, asymmetry_male$asymmetry)[,,5],2)
+prop.table(table(asymmetry_male$correct, asymmetry_male$respondent_group, asymmetry_male$asymmetry)[,,6],2)
+prop.table(table(asymmetry_male$correct, asymmetry_male$respondent_group, asymmetry_male$asymmetry)[,,7],2)
+
+#percentage of correct responses (ignoring gender of photo)
+tab1 <- table(asymmetry_male$correct, asymmetry_male$respondent_group, asymmetry_male$asymmetry)
+propcorrect1mm <- prop.table(tab1[,,1],2)
+propcorrect1.5mm <- prop.table(tab1[,,2],2)
+propcorrect2mm <- prop.table(tab1[,,3],2)
+propcorrect2.5mm <- prop.table(tab1[,,4],2)
+propcorrect3mm <- prop.table(tab1[,,5],2)
+propcorrect3.5mm <- prop.table(tab1[,,6],2)
+propcorrect4mm <- prop.table(tab1[,,7],2)
+
+PercentageCorrect_male <- rbind(propcorrect1mm[2,],
+                           propcorrect1.5mm[2,],
+                           propcorrect2mm[2,],
+                           propcorrect2.5mm[2,],
+                           propcorrect3mm[2,],
+                           propcorrect3.5mm[2,],
+                           propcorrect4mm[2,])
+
+PercentageCorrect_male <- rbind(cbind(table(cliniciandata_comp$male_sym.factor)[2]/sum(table(cliniciandata_comp$male_sym.factor)),c(table(studentdata_comp$male_sym.factor)[2])/sum(table(studentdata_comp$male_sym.factor))),
+                           PercentageCorrect_male)
+rownames(PercentageCorrect_male) <- c("Symmetric", "1mm", "1.5mm", "2mm", "2.5mm", "3mm", "3.5mm", "4mm")
+```
+
+### Female
+
+```{r}
+asymmetry_female <- asymmetry[which(asymmetry$gender_photo=="Female"),]
+
+#table of responses (ignoring gender of photo)
+table(asymmetry_female$correct, asymmetry_female$respondent_group, asymmetry_female$asymmetry)
+
+#column percentages across each repeated measure (ignoring gender of photo)
+prop.table(table(asymmetry_female$correct, asymmetry_female$respondent_group, asymmetry_female$asymmetry)[,,1],2)
+prop.table(table(asymmetry_female$correct, asymmetry_female$respondent_group, asymmetry_female$asymmetry)[,,2],2)
+prop.table(table(asymmetry_female$correct, asymmetry_female$respondent_group, asymmetry_female$asymmetry)[,,3],2)
+prop.table(table(asymmetry_female$correct, asymmetry_female$respondent_group, asymmetry_female$asymmetry)[,,4],2)
+prop.table(table(asymmetry_female$correct, asymmetry_female$respondent_group, asymmetry_female$asymmetry)[,,5],2)
+prop.table(table(asymmetry_female$correct, asymmetry_female$respondent_group, asymmetry_female$asymmetry)[,,6],2)
+prop.table(table(asymmetry_female$correct, asymmetry_female$respondent_group, asymmetry_female$asymmetry)[,,7],2)
+
+#percentage of correct responses (ignoring gender of photo)
+tab1 <- table(asymmetry_female$correct, asymmetry_female$respondent_group, asymmetry_female$asymmetry)
+propcorrect1mm <- prop.table(tab1[,,1],2)
+propcorrect1.5mm <- prop.table(tab1[,,2],2)
+propcorrect2mm <- prop.table(tab1[,,3],2)
+propcorrect2.5mm <- prop.table(tab1[,,4],2)
+propcorrect3mm <- prop.table(tab1[,,5],2)
+propcorrect3.5mm <- prop.table(tab1[,,6],2)
+propcorrect4mm <- prop.table(tab1[,,7],2)
+
+PercentageCorrect_female <- rbind(propcorrect1mm[2,],
+                           propcorrect1.5mm[2,],
+                           propcorrect2mm[2,],
+                           propcorrect2.5mm[2,],
+                           propcorrect3mm[2,],
+                           propcorrect3.5mm[2,],
+                           propcorrect4mm[2,])
+
+PercentageCorrect_female <- rbind(cbind(table(cliniciandata_comp$female_symm.factor)[2]/sum(table(cliniciandata_comp$female_symm.factor)),c(table(studentdata_comp$female_symm.factor)[2])/sum(table(studentdata_comp$female_symm.factor))),
+                           PercentageCorrect_female)
+rownames(PercentageCorrect_female) <- c("Symmetric", "1mm", "1.5mm", "2mm", "2.5mm", "3mm", "3.5mm", "4mm")
+```
+
+
+# Setting contrasts for factors
+
+```{r}
+#contrasts(asymmetry$respondent_group) <- contr.sum(2)
+#contrasts(asymmetry$asymmetry) <- contr.sum(7)
+```
+
+# Naive logistic regression, ignoring repeated measures, ignoring gender of photo
+ 
+```{r}
+#with interaction
+naiveglm = glm(correct ~ respondent_group*asymmetry,
+               data=asymmetry,
+               family=binomial)
+summary(naiveglm)
+
+#no interaction
+naiveglm2 = glm(correct ~ respondent_group+asymmetry,
+               data=asymmetry,
+               family=binomial)
+summary(naiveglm2)
+```
+
+## Likelihood ratio tests
+
+```{r}
+anova(naiveglm, test="Chisq") # Terms added sequentially first to last
+Anova(naiveglm, type="III") # Each term is last
+
+anova(naiveglm2, test="Chisq") # Terms added sequentially first to last
+Anova(naiveglm2, type="III") # Each term is last
+```
+
+# Fit a mixed model; random intercept
+
+## Image Gender: Male
+
+```{r}
+asymmetry.male <- asymmetry[which(asymmetry$gender_photo=="Male"),]
+asymmetry.male <- asymmetry.male[,c(1,2,4,5)]
+
+asymm.male.mixed1 = glmer(correct ~ respondent_group*asymmetry + (1 | ID), 
+              data=asymmetry.male,
+              family=binomial(link = "logit"),
+              #correlation = corAR1(form = ~ 1 | ID), cant set correlation structure
+              glmerControl(optimizer = "bobyqa"),
+              nAGQ = 10)
+
+Anova(asymm.male.mixed1, type="III")
+
+#final model
+asymm.male.mixed.f = asymm.male.mixed1
+
+summary(asymm.male.mixed.f)
+
+#confidence intervals
+se <- sqrt(diag(vcov(asymm.male.mixed.f)))
+# table of estimates with 95% CI
+tab <- cbind(Est = fixef(asymm.male.mixed.f), LL = fixef(asymm.male.mixed.f) - 1.96 * se, UL = fixef(asymm.male.mixed.f) + 1.96 *
+    se)
+
+round(exp(tab),4)
+
+#plotting
+jvalues <- c("1mm","1.5mm","2mm","2.5mm","3mm","3.5mm","4mm")
+tmpdat <- asymmetry.male
+pp <- lapply(jvalues, function(j) {
+    tmpdat$asymmetry <- j
+    predict(asymm.male.mixed.f, newdata = tmpdat, type = "response")
+})
+sapply(pp[c(1:7)], median)
+plotdat <- t(sapply(pp, function(x) {
+    c(M = median(x), quantile(x, c(0.25, 0.75)))
+}))
+plotdat <- cbind.data.frame(plotdat, jvalues)
+plotdat$jvalues <- factor(plotdat$jvalues, levels=c("1mm","1.5mm","2mm","2.5mm","3mm","3.5mm","4mm"))
+
+
+# better names and show the first few rows
+colnames(plotdat) <- c("PredictedProbability", "Lower", "Upper", "Asymmetry")
+head(plotdat)
+ggplot(plotdat, aes(x = Asymmetry, y = PredictedProbability, group = 1)) + geom_line() + geom_point() +
+    ylim(c(0, 1))
+ggplot(plotdat, aes(x = Asymmetry, y = PredictedProbability, group = 1)) + geom_linerange(aes(ymin = Lower,
+    ymax = Upper)) + geom_line() + geom_point() + ylim(c(0, 1))
+
+# calculate predicted probabilities and store in a list
+biprobs <- lapply(levels(asymmetry.male$respondent_group), function(grp) {
+  tmpdat$respondent_group[] <- grp
+  lapply(jvalues, function(j) {
+    tmpdat$asymmetry <- j
+    predict(asymm.male.mixed.f, newdata = tmpdat, type = "response")
+  })
+})
+
+# get means and quartiles for all jvalues for each level of group
+plotdat2 <- lapply(biprobs, function(X) {
+  temp <- t(sapply(X, function(x) {
+    c(M=median(x), quantile(x, c(.25, .75)))
+  }))
+  temp <- as.data.frame(cbind(temp, jvalues))
+  colnames(temp) <- c("PredictedProbability", "Lower", "Upper", "Asymmetry")
+  return(temp)
+})
+
+# collapse to one data frame
+plotdat2 <- do.call(rbind, plotdat2)
+
+# add group
+plotdat2$Respondent <- factor(rep(levels(asymmetry.male$respondent_group), each = length(jvalues)))
+
+# show first few rows
+plotdat2$PredictedProbability <- as.numeric(as.character(plotdat2$PredictedProbability))
+plotdat2$Lower <- as.numeric(as.character(plotdat2$Lower))
+plotdat2$Upper <- as.numeric(as.character(plotdat2$Upper))
+plotdat2$Asymmetry <- factor(plotdat2$Asymmetry,levels=c("1mm","1.5mm","2mm","2.5mm","3mm","3.5mm","4mm"))
+head(plotdat2)
+
+ggplot(plotdat2, aes(x = Asymmetry, y = PredictedProbability, group=Respondent)) +
+  geom_ribbon(aes(ymin = Lower, ymax = Upper, fill = Respondent), alpha = .15) +
+  geom_line(aes(colour = Respondent), size = 1) + geom_point(aes(colour = Respondent), size = 2) +
+  ylim(c(0, 1)) 
+
+
+```
+
+### Agregating Results
+
+```{r}
+# Make a table of estimated population mean log odds
+X = model.matrix(asymm.male.mixed.f) # The X matrix!
+summod = summary(asymm.male.mixed.f)
+betahat = cbind(summod$coef[,1]) # Estimated fixed effects as a column vector.
+estlogodds = X %*% betahat # Estimated pop mean log odds for each observation.
+
+aggmeans = aggregate(estlogodds, by = list(asymmetry.male$respondent_group,asymmetry.male$asymmetry), FUN = mean)
+aggmeans
+
+treatmeans = aggmeans[,3]
+dim(treatmeans) = c(2,7)
+
+rownames(treatmeans) = c("Clinician", "Student")
+colnames(treatmeans) = c("1mm","1.5mm","2mm","2.5mm","3mm","3.5mm","4mm")
+round(addmargins(treatmeans,FUN=mean, quiet=T),2) # With marginal means
+
+```
+
+### Testing differences between Clinicians and Students at each asymmetry
+
+```{r}
+
+# Test pairwise differences between marginal means with a Bonferroni correction
+##
+n = length(asymmetry.male$ID); n
+ 
+respondentcond <- character(n) 
+for(j in 1:n) respondentcond[j] = paste(asymmetry.male$respondent_group[j],asymmetry.male$asymmetry[j],sep='')
+freq = table(respondentcond); freq
+
+# Fit a no-intercept model on the combination variable. 
+asymmetry.male$respondentcond <- respondentcond
+asymmetry.male$respondentcond <- factor(asymmetry.male$respondentcond, levels=c("Clinician1mm",
+         "Clinician1.5mm",
+         "Clinician2mm",
+         "Clinician2.5mm",
+         "Clinician3mm",
+         "Clinician3.5mm",
+         "Clinician4mm",
+         "Student1mm",
+         "Student1.5mm",
+         "Student2mm",
+         "Student2.5mm",
+         "Student3mm",
+         "Student3.5mm",
+         "Student4mm"))
+noint = glmer(correct ~ 0 + respondentcond + (1 | ID),
+              data=asymmetry.male,
+              family=binomial(link = "logit"),
+              #correlation = corAR1(form = ~ 1 | ID), cant set correlation structure
+              glmerControl(optimizer = "bobyqa"),
+              nAGQ = 10) 
+
+nointsum = summary(noint); nointsum
+
+comparing_respondents_mat = rbind(
++ # 1             2             3            4              5             6             7            8           9           10         11           12          13           14  
++ # Clinician1mm Clinician1.5mm Clinician2mm Clinician2.5mm Clinician3mm Clinician3.5mm Clinician4mm Student1mm Student1.5mm Student2mm Student2.5mm Student3mm Student3.5mm Student4mm
++ #  1  2  3   4  5  6  7  8  9  10  11  12 13  14
++ c( 1, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0),
++ c( 0, 1, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0),
++ c( 0, 0, 1, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0),
++ c( 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0),
++ c( 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, -1, 0, 0),
++ c( 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, -1, 0),
++ c( 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, -1))
+
+colnames(comparing_respondents_mat) = levels(asymmetry.male$respondentcond)
+rownames(comparing_respondents_mat) = c("CvS:1mm", "CvS:1.5mm", "CvS:2mm", "CvS:2.5mm", "CvS:3mm", "CvS:3.5mm", "CvS:4mm")
+
+# Make pairwise comparison matrices. Chi-squared test statistics will be in the
+# upper triangle, and unadjusted p-values in the lower triangle.
+Pairwise1 = cbind(rep(0,7),rep(0,7))
+colnames(Pairwise1) = c("Test Statistic", "P-Value")
+
+for(i in 1:7){
+
+ L = comparing_respondents_mat[i,]
+ Ltest = linearHypothesis(noint,L) # Testing H0: L beta = 0
+ Pairwise1[i,1] = Ltest[2,2] # Test statistic
+ Pairwise1[i,2] = Ltest[2,3] # p-value
+} 
+Pairwise1[,1] <- round(Pairwise1[,1], 2)
+Pairwise1[,2] <- round(Pairwise1[,2], 5)
+Pairwise1 <- as.data.frame(Pairwise1)
+Pairwise1$PValue.Adjust <- p.adjust(Pairwise1[,2], method = "bonferroni")
+```
+
+### Testing differences between consecutive asymmetries
+
+```{r}
+comparing_asymmetries_mat = rbind(
++ # 1             2             3            4              5             6             7            8           9           10         11           12          13           14  
++ # Clinician1mm Clinician1.5mm Clinician2mm Clinician2.5mm Clinician3mm Clinician3.5mm Clinician4mm Student1mm Student1.5mm Student2mm Student2.5mm Student3mm Student3.5mm Student4mm
++ #  1  2  3   4  5  6  7  8  9  10  11  12 13  14
++ c( 1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
++ c( 0, 1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
++ c( 0, 0, 1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
++ c( 0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
++ c( 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 0, 0, 0),
++ c( 0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 0, 0),
++ c( 0, 0, 0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 0),
++ c( 0, 0, 0, 0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0),
++ c( 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -1, 0, 0, 0),
++ c( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -1, 0, 0),
++ c( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -1, 0),
++ c( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -1))
+
+colnames(comparing_asymmetries_mat) = levels(asymmetry.male$respondentcond)
+rownames(comparing_asymmetries_mat) = c("1mmv1.5mm:C",
+                                         "1.5mmv2mm:C",
+                                         "2mmv2.5mm:C",
+                                         "2.5mmv3mm:C",
+                                         "3mmv3.5mm:C",
+                                         "3.5mmv4mm:C",
+                                         "1mmv1.5mm:S",
+                                         "1.5mmv2mm:S",
+                                         "2mmv2.5mm:S",
+                                         "2.5mmv3mm:S",
+                                         "3mmv3.5mm:S",
+                                         "3.5mmv4mm:S")
+
+# Make pairwise comparison matrices. Chi-squared test statistics will be in the
+# upper triangle, and unadjusted p-values in the lower triangle.
+Pairwise2 = cbind(rep(0,12),rep(0,12))
+colnames(Pairwise2) = c("Test Statistic", "PValue")
+
+for(i in 1:12){
+
+ L = comparing_asymmetries_mat[i,]
+ Ltest = linearHypothesis(noint,L) # Testing H0: L beta = 0
+ Pairwise2[i,1] = Ltest[2,2] # Test statistic
+ Pairwise2[i,2] = Ltest[2,3] # p-value
+} 
+Pairwise2[,1] <- round(Pairwise2[,1], 2)
+Pairwise2[,2] <- round(Pairwise2[,2], 5)
+Pairwise2 <- as.data.frame(Pairwise2)
+Pairwise2$PValue.Adjust <- p.adjust(Pairwise2[,2], method = "bonferroni")
+```
+
+### Testing differences of differences between consecutive asymmetries between clinicians and students
+
+```{r}
+comparing_asymmetries_mat2 = rbind(
++ # 1             2             3            4              5             6             7            8           9           10         11           12          13           14  
++ # Clinician1mm Clinician1.5mm Clinician2mm Clinician2.5mm Clinician3mm Clinician3.5mm Clinician4mm Student1mm Student1.5mm Student2mm Student2.5mm Student3mm Student3.5mm Student4mm
++ #  1  2  3   4  5  6  7  8  9  10  11  12 13  14
++ c( 1, -1, 0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 0),
++ c( 0, 1, -1, 0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0),
++ c( 0, 0, 1, -1, 0, 0, 0, 0, 0, 1, -1, 0, 0, 0),
++ c( 0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 1, -1, 0, 0),
++ c( 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 1, -1, 0),
++ c( 0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 1, -1))
+
+colnames(comparing_asymmetries_mat2) = levels(asymmetry.male$respondentcond)
+rownames(comparing_asymmetries_mat2) = c("1mmv1.5mm;C:1mmv1.5mm;S",
+                                        "1.5mmv2mm;C:1.5mmv2mm;S",
+                                        "2mmv2.5mm;C:2mmv2.5mm;S",
+                                        "2.5mmv3mm;C:2.5mmv3mm;S",
+                                        "3mmv3.5mm;C:3mmv3.5mm;S",
+                                        "3.5mmv4mm;C:3.5mmv4mm;S")
+
+# Make pairwise comparison matrices. Chi-squared test statistics will be in the
+# upper triangle, and unadjusted p-values in the lower triangle.
+Pairwise3 = cbind(rep(0,6),rep(0,6))
+colnames(Pairwise3) = c("Test Statistic", "PValue")
+
+for(i in 1:6){
+
+ L = comparing_asymmetries_mat2[i,]
+ Ltest = linearHypothesis(noint,L) # Testing H0: L beta = 0
+ Pairwise3[i,1] = Ltest[2,2] # Test statistic
+ Pairwise3[i,2] = Ltest[2,3] # p-value
+} 
+Pairwise3[,1] <- round(Pairwise3[,1], 2)
+Pairwise3[,2] <- round(Pairwise3[,2], 5)
+Pairwise3 <- as.data.frame(Pairwise3)
+Pairwise3$PValue.Adjust <- p.adjust(Pairwise3[,2], method = "bonferroni")
+```
+
+## Image Gender: Female
+
+```{r}
+asymmetry.Female <- asymmetry[which(asymmetry$gender_photo=="Female"),]
+asymmetry.Female <- asymmetry.Female[,c(1,2,4,5)]
+
+asymm.Female.mixed1 = glmer(correct ~ respondent_group*asymmetry + (1 | ID), 
+              data=asymmetry.Female,
+              family=binomial(link = "logit"),
+              #correlation = corAR1(form = ~ 1 | ID), cant set correlation structure
+              glmerControl(optimizer = "bobyqa"),
+              nAGQ = 10)
+
+Anova(asymm.Female.mixed1, type="III")
+
+#final model
+asymm.Female.mixed.f = asymm.Female.mixed1
+
+summary(asymm.Female.mixed.f)
+
+#confidence intervals
+se <- sqrt(diag(vcov(asymm.Female.mixed.f)))
+# table of estimates with 95% CI
+tab <- cbind(Est = fixef(asymm.Female.mixed.f), LL = fixef(asymm.Female.mixed.f) - 1.96 * se, UL = fixef(asymm.Female.mixed.f) + 1.96 *
+    se)
+
+round(exp(tab),4)
+
+#plotting
+jvalues <- c("1mm","1.5mm","2mm","2.5mm","3mm","3.5mm","4mm")
+tmpdat <- asymmetry.Female
+pp <- lapply(jvalues, function(j) {
+    tmpdat$asymmetry <- j
+    predict(asymm.Female.mixed.f, newdata = tmpdat, type = "response")
+})
+sapply(pp[c(1:7)], median)
+plotdat <- t(sapply(pp, function(x) {
+    c(M = median(x), quantile(x, c(0.25, 0.75)))
+}))
+plotdat <- cbind.data.frame(plotdat, jvalues)
+plotdat$jvalues <- factor(plotdat$jvalues, levels=c("1mm","1.5mm","2mm","2.5mm","3mm","3.5mm","4mm"))
+
+
+# better names and show the first few rows
+colnames(plotdat) <- c("PredictedProbability", "Lower", "Upper", "Asymmetry")
+head(plotdat)
+ggplot(plotdat, aes(x = Asymmetry, y = PredictedProbability, group = 1)) + geom_line() + geom_point() +
+    ylim(c(0, 1))
+ggplot(plotdat, aes(x = Asymmetry, y = PredictedProbability, group = 1)) + geom_linerange(aes(ymin = Lower,
+    ymax = Upper)) + geom_line() + geom_point() + ylim(c(0, 1))
+
+# calculate predicted probabilities and store in a list
+biprobs <- lapply(levels(asymmetry.Female$respondent_group), function(grp) {
+  tmpdat$respondent_group[] <- grp
+  lapply(jvalues, function(j) {
+    tmpdat$asymmetry <- j
+    predict(asymm.Female.mixed.f, newdata = tmpdat, type = "response")
+  })
+})
+
+# get means and quartiles for all jvalues for each level of group
+plotdat2 <- lapply(biprobs, function(X) {
+  temp <- t(sapply(X, function(x) {
+    c(M=median(x), quantile(x, c(.25, .75)))
+  }))
+  temp <- as.data.frame(cbind(temp, jvalues))
+  colnames(temp) <- c("PredictedProbability", "Lower", "Upper", "Asymmetry")
+  return(temp)
+})
+
+# collapse to one data frame
+plotdat2 <- do.call(rbind, plotdat2)
+
+# add group
+plotdat2$Respondent <- factor(rep(levels(asymmetry.Female$respondent_group), each = length(jvalues)))
+
+# show first few rows
+plotdat2$PredictedProbability <- as.numeric(as.character(plotdat2$PredictedProbability))
+plotdat2$Lower <- as.numeric(as.character(plotdat2$Lower))
+plotdat2$Upper <- as.numeric(as.character(plotdat2$Upper))
+plotdat2$Asymmetry <- factor(plotdat2$Asymmetry,levels=c("1mm","1.5mm","2mm","2.5mm","3mm","3.5mm","4mm"))
+head(plotdat2)
+
+ggplot(plotdat2, aes(x = Asymmetry, y = PredictedProbability, group=Respondent)) +
+  geom_ribbon(aes(ymin = Lower, ymax = Upper, fill = Respondent), alpha = .15) +
+  geom_line(aes(colour = Respondent), size = 1) + geom_point(aes(colour = Respondent), size = 2) +
+  ylim(c(0, 1)) 
+
+
+```
+
+### Agregating Results
+
+```{r}
+# Make a table of estimated population mean log odds
+X = model.matrix(asymm.Female.mixed.f) # The X matrix!
+summod = summary(asymm.Female.mixed.f)
+betahat = cbind(summod$coef[,1]) # Estimated fixed effects as a column vector.
+estlogodds = X %*% betahat # Estimated pop mean log odds for each observation.
+
+aggmeans = aggregate(estlogodds, by = list(asymmetry.Female$respondent_group,asymmetry.Female$asymmetry), FUN = mean)
+aggmeans
+
+treatmeans = aggmeans[,3]
+dim(treatmeans) = c(2,7)
+
+rownames(treatmeans) = c("Clinician", "Student")
+colnames(treatmeans) = c("1mm","1.5mm","2mm","2.5mm","3mm","3.5mm","4mm")
+round(addmargins(treatmeans,FUN=mean, quiet=T),2) # With marginal means
+
+```
+
+### Testing differences between Clinicians and Students at each asymmetry
+
+```{r}
+
+# Test pairwise differences between marginal means with a Bonferroni correction
+##
+n = length(asymmetry.Female$ID); n
+ 
+respondentcond <- character(n) 
+for(j in 1:n) respondentcond[j] = paste(asymmetry.Female$respondent_group[j],asymmetry.Female$asymmetry[j],sep='')
+freq = table(respondentcond); freq
+
+# Fit a no-intercept model on the combination variable. 
+asymmetry.Female$respondentcond <- respondentcond
+asymmetry.Female$respondentcond <- factor(asymmetry.Female$respondentcond, levels=c("Clinician1mm",
+         "Clinician1.5mm",
+         "Clinician2mm",
+         "Clinician2.5mm",
+         "Clinician3mm",
+         "Clinician3.5mm",
+         "Clinician4mm",
+         "Student1mm",
+         "Student1.5mm",
+         "Student2mm",
+         "Student2.5mm",
+         "Student3mm",
+         "Student3.5mm",
+         "Student4mm"))
+noint = glmer(correct ~ 0 + respondentcond + (1 | ID),
+              data=asymmetry.Female,
+              family=binomial(link = "logit"),
+              #correlation = corAR1(form = ~ 1 | ID), cant set correlation structure
+              glmerControl(optimizer = "bobyqa"),
+              nAGQ = 10) 
+
+nointsum = summary(noint); nointsum
+
+comparing_respondents_mat = rbind(
++ # 1             2             3            4              5             6             7            8           9           10         11           12          13           14  
++ # Clinician1mm Clinician1.5mm Clinician2mm Clinician2.5mm Clinician3mm Clinician3.5mm Clinician4mm Student1mm Student1.5mm Student2mm Student2.5mm Student3mm Student3.5mm Student4mm
++ #  1  2  3   4  5  6  7  8  9  10  11  12 13  14
++ c( 1, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0),
++ c( 0, 1, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0),
++ c( 0, 0, 1, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0),
++ c( 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0),
++ c( 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, -1, 0, 0),
++ c( 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, -1, 0),
++ c( 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, -1))
+
+colnames(comparing_respondents_mat) = levels(asymmetry.Female$respondentcond)
+rownames(comparing_respondents_mat) = c("CvS:1mm", "CvS:1.5mm", "CvS:2mm", "CvS:2.5mm", "CvS:3mm", "CvS:3.5mm", "CvS:4mm")
+
+# Make pairwise comparison matrices. Chi-squared test statistics will be in the
+# upper triangle, and unadjusted p-values in the lower triangle.
+Pairwise1 = cbind(rep(0,7),rep(0,7))
+colnames(Pairwise1) = c("Test Statistic", "P-Value")
+
+for(i in 1:7){
+
+ L = comparing_respondents_mat[i,]
+ Ltest = linearHypothesis(noint,L) # Testing H0: L beta = 0
+ Pairwise1[i,1] = Ltest[2,2] # Test statistic
+ Pairwise1[i,2] = Ltest[2,3] # p-value
+} 
+Pairwise1[,1] <- round(Pairwise1[,1], 2)
+Pairwise1[,2] <- round(Pairwise1[,2], 5)
+Pairwise1 <- as.data.frame(Pairwise1)
+Pairwise1$PValue.Adjust <- p.adjust(Pairwise1[,2], method = "bonferroni")
+```
+
+### Testing differences between consecutive asymmetries
+
+```{r}
+comparing_asymmetries_mat = rbind(
++ # 1             2             3            4              5             6             7            8           9           10         11           12          13           14  
++ # Clinician1mm Clinician1.5mm Clinician2mm Clinician2.5mm Clinician3mm Clinician3.5mm Clinician4mm Student1mm Student1.5mm Student2mm Student2.5mm Student3mm Student3.5mm Student4mm
++ #  1  2  3   4  5  6  7  8  9  10  11  12 13  14
++ c( 1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
++ c( 0, 1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
++ c( 0, 0, 1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
++ c( 0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
++ c( 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 0, 0, 0),
++ c( 0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 0, 0),
++ c( 0, 0, 0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 0),
++ c( 0, 0, 0, 0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0),
++ c( 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -1, 0, 0, 0),
++ c( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -1, 0, 0),
++ c( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -1, 0),
++ c( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -1))
+
+colnames(comparing_asymmetries_mat) = levels(asymmetry.Female$respondentcond)
+rownames(comparing_asymmetries_mat) = c("1mmv1.5mm:C",
+                                         "1.5mmv2mm:C",
+                                         "2mmv2.5mm:C",
+                                         "2.5mmv3mm:C",
+                                         "3mmv3.5mm:C",
+                                         "3.5mmv4mm:C",
+                                         "1mmv1.5mm:S",
+                                         "1.5mmv2mm:S",
+                                         "2mmv2.5mm:S",
+                                         "2.5mmv3mm:S",
+                                         "3mmv3.5mm:S",
+                                         "3.5mmv4mm:S")
+
+# Make pairwise comparison matrices. Chi-squared test statistics will be in the
+# upper triangle, and unadjusted p-values in the lower triangle.
+Pairwise2 = cbind(rep(0,12),rep(0,12))
+colnames(Pairwise2) = c("Test Statistic", "PValue")
+
+for(i in 1:12){
+
+ L = comparing_asymmetries_mat[i,]
+ Ltest = linearHypothesis(noint,L) # Testing H0: L beta = 0
+ Pairwise2[i,1] = Ltest[2,2] # Test statistic
+ Pairwise2[i,2] = Ltest[2,3] # p-value
+} 
+Pairwise2[,1] <- round(Pairwise2[,1], 2)
+Pairwise2[,2] <- round(Pairwise2[,2], 5)
+Pairwise2 <- as.data.frame(Pairwise2)
+Pairwise2$PValue.Adjust <- p.adjust(Pairwise2[,2], method = "bonferroni")
+```
+
+### Testing differences of differences between consecutive asymmetries between clinicians and students
+
+```{r}
+comparing_asymmetries_mat2 = rbind(
++ # 1             2             3            4              5             6             7            8           9           10         11           12          13           14  
++ # Clinician1mm Clinician1.5mm Clinician2mm Clinician2.5mm Clinician3mm Clinician3.5mm Clinician4mm Student1mm Student1.5mm Student2mm Student2.5mm Student3mm Student3.5mm Student4mm
++ #  1  2  3   4  5  6  7  8  9  10  11  12 13  14
++ c( 1, -1, 0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 0),
++ c( 0, 1, -1, 0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0),
++ c( 0, 0, 1, -1, 0, 0, 0, 0, 0, 1, -1, 0, 0, 0),
++ c( 0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 1, -1, 0, 0),
++ c( 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 1, -1, 0),
++ c( 0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 1, -1))
+
+colnames(comparing_asymmetries_mat2) = levels(asymmetry.Female$respondentcond)
+rownames(comparing_asymmetries_mat2) = c("1mmv1.5mm;C:1mmv1.5mm;S",
+                                        "1.5mmv2mm;C:1.5mmv2mm;S",
+                                        "2mmv2.5mm;C:2mmv2.5mm;S",
+                                        "2.5mmv3mm;C:2.5mmv3mm;S",
+                                        "3mmv3.5mm;C:3mmv3.5mm;S",
+                                        "3.5mmv4mm;C:3.5mmv4mm;S")
+
+# Make pairwise comparison matrices. Chi-squared test statistics will be in the
+# upper triangle, and unadjusted p-values in the lower triangle.
+Pairwise3 = cbind(rep(0,6),rep(0,6))
+colnames(Pairwise3) = c("Test Statistic", "PValue")
+
+for(i in 1:6){
+
+ L = comparing_asymmetries_mat2[i,]
+ Ltest = linearHypothesis(noint,L) # Testing H0: L beta = 0
+ Pairwise3[i,1] = Ltest[2,2] # Test statistic
+ Pairwise3[i,2] = Ltest[2,3] # p-value
+} 
+Pairwise3[,1] <- round(Pairwise3[,1], 2)
+Pairwise3[,2] <- round(Pairwise3[,2], 5)
+Pairwise3 <- as.data.frame(Pairwise3)
+Pairwise3$PValue.Adjust <- p.adjust(Pairwise3[,2], method = "bonferroni")
+```

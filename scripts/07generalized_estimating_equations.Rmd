@@ -1,0 +1,127 @@
+---
+title: "Fitting a Generalized Estimating Equations Model"
+author: "Spiro Stilianoudakis"
+date: "May 10, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Loading Packages
+
+```{r}
+library(dplyr)
+library(lme4)
+library(car)
+library(geepack)
+library(gee)
+library(ggplot2)
+library(lsmeans)
+library(multcompView)
+```
+
+# Set working directory
+
+```{r}
+setwd("X:/CommonPrograms/Oral Health Services Research Core/Spiro/Asymmetry")
+```
+
+
+# Reading in stacked dataset
+
+```{r}
+asymmetry <- readRDS("stacked_all.rds")
+asymmetry$correct <- relevel(asymmetry$correct, ref = 1)
+
+#continuous repeated measures variable
+asymmetry$asymmetry_cont <- as.numeric(gsub("mm","",asymmetry$asymmetry))
+  
+#attach(asymmetry)
+```
+
+# Fit a generalized estimating equation
+
+## Image Gender: Male
+
+```{r}
+asymmetry.male <- asymmetry[which(asymmetry$gender_photo=="Male"),]
+asymmetry.male <- asymmetry.male[,c(1,2,4,5)]
+#asymmetry.male$respondent_group <- relevel(asymmetry.male$respondent_group, ref = "Student")
+#asymmetry.male$asymmetry <- relevel(asymmetry.male$asymmetry, ref = "4mm")
+
+asymm.male.gee <- gee(formula = correct ~ respondent_group*asymmetry,
+                   family  = binomial(link = "logit"),
+                   id      = ID,
+                   data    = asymmetry.male,
+                   corstr="AR-M", 
+                   Mv=1
+                   )
+
+summary(asymm.male.gee)
+
+round(2 * pnorm(abs(coef(summary(asymm.male.gee))[,5]), lower.tail = FALSE),5)
+```
+
+### LSMEANS
+
+```{r}
+#probability of correct response at each level of respondent_group*asymmetry
+marginal = lsmeans(asymm.male.gee, 
+                   ~ respondent_group*asymmetry,
+                   adjust="tukey")
+
+cld(marginal,
+    alpha=0.05,
+    Letters=letters,     
+    #adjust="tukey",
+    type = "response")
+
+#Differences of asym*respondent Least Squares Means
+#Adjustment for Multiple Comparisons: Tukey-Kramer
+pairs(emmeans(asymm.male.gee, ~ respondent_group|asymmetry, type="response"), by=NULL) #full list
+pairs(emmeans(asymm.male.gee, ~ respondent_group|asymmetry, type="response", adjust="tukey")) #only relavent comparisons
+```
+
+## Image Gender: Female
+
+```{r}
+asymmetry.female <- asymmetry[which(asymmetry$gender_photo=="Female"),]
+asymmetry.female <- asymmetry.female[,c(1,2,4,5)]
+#asymmetry.female$respondent_group <- relevel(asymmetry.female$respondent_group, ref = "Student")
+#asymmetry.female$asymmetry <- relevel(asymmetry.female$asymmetry, ref = "4mm")
+
+asymm.female.gee <- gee(formula = correct ~ respondent_group*asymmetry,
+                   family  = binomial(link = "logit"),
+                   id      = ID,
+                   data    = asymmetry.female,
+                   corstr="AR-M", 
+                   Mv=1
+                   )
+
+summary(asymm.female.gee)
+
+round(2 * pnorm(abs(coef(summary(asymm.female.gee))[,5]), lower.tail = FALSE),5)
+
+```
+
+### LSMEANS
+
+```{r}
+#probability of correct response at each level of respondent_group*asymmetry
+marginal = lsmeans(asymm.female.gee, 
+                   adjust="tukey",
+                   ~ respondent_group*asymmetry)
+
+cld(marginal,
+    alpha=0.05,
+    Letters=letters,     
+    #adjust="tukey",
+    type = "response")
+
+#Differences of asym*respondent Least Squares Means
+#Adjustment for Multiple Comparisons: Tukey-Kramer
+pairs(emmeans(asymm.female.gee, ~ respondent_group|asymmetry), by=NULL) #full list
+pairs(emmeans(asymm.female.gee, ~ respondent_group|asymmetry, type="response", adjust="tukey")) #only relavent comparisons
+```

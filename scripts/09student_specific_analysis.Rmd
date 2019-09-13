@@ -1,0 +1,110 @@
+---
+title: "Student-Specific Analysis"
+author: "Spiro Stilianoudakis"
+date: "May 13, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Loading Packages
+
+```{r}
+library(dplyr)
+library(lme4)
+library(car)
+library(geepack)
+library(gee)
+library(ggplot2)
+library(lsmeans)
+library(multcompView)
+```
+
+# Set working directory
+
+```{r}
+setwd("X:/CommonPrograms/Oral Health Services Research Core/Spiro/Asymmetry")
+```
+
+
+# Reading in stacked dataset
+
+```{r}
+student <- readRDS("stacked_student.rds")
+student$correct <- relevel(student$correct, ref = 1)
+student$record_id <- as.integer(student$record_id)
+
+#continuous repeated measures variable
+student$asymmetry_cont <- as.numeric(gsub("mm","",student$asymmetry))
+  
+#attach(student)
+
+table(student$group)
+```
+
+# Fit a generalized estimating equation
+
+## Image Gender: Male
+
+```{r}
+student.male <- student[which(student$gender_photo=="Male"),]
+student.male$respondent_group <- relevel(student.male$group, ref = "Medicine")
+#student.male$asymmetry <- relevel(student.male$asymmetry, ref = "4mm")
+student.male$correct <- as.integer(as.character(student.male$correct))
+
+#student.male.gee <- gee(formula = correct ~ group*asymmetry_cont,
+#                   family  = binomial(link = "logit"),
+#                   id      = record_id,
+#                   data    = student.male,
+#                   corstr="AR-M", 
+#                   Mv=1,
+#                   maxiter=10000,
+#                   tol = 0.0001
+#                   )
+
+student.male.gee <- geeglm(formula = correct ~ group*asymmetry,
+                   family  = binomial(link = "logit"),
+                   id      = record_id,
+                   data    = student.male,
+                   corstr="ar1",
+                   std.err="san.se"
+                   )
+
+summary(student.male.gee)
+
+table(student.male$group, student.male$correct, student.male$asymmetry)
+```
+
+## Image Gender: Female
+
+```{r}
+student.female <- student[which(student$gender_photo=="Female"),]
+student.female$respondent_group <- relevel(student.female$group, ref = "Medicine")
+#student.female$asymmetry <- relevel(student.female$asymmetry, ref = "4mm")
+student.female$correct <- as.integer(as.character(student.female$correct))
+
+#student.female.gee <- gee(formula = correct ~ group*asymmetry_cont,
+#                   family  = binomial(link = "logit"),
+#                   id      = record_id,
+#                   data    = student.female,
+#                   corstr="AR-M", 
+#                   Mv=1,
+#                   maxiter=10000,
+#                   tol = 0.0001
+#                   )
+
+student.female.gee <- geeglm(formula = correct ~ group*asymmetry,
+                   family  = binomial(link = "logit"),
+                   id      = record_id,
+                   data    = student.female,
+                   corstr="ar1",
+                   std.err="san.se"
+                   )
+
+summary(student.female.gee)
+
+table(student.female$group, student.female$correct, student.female$asymmetry)
+
+```

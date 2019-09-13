@@ -1,0 +1,84 @@
+---
+title: "Untitled"
+author: "Spiro Stilianoudakis"
+date: "July 16, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(openxlsx)
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(reshape2)
+```
+
+#Setting Working Directory
+
+```{r}
+setwd("X:/CommonPrograms/Oral Health Services Research Core/Spiro/Asymmetry")
+```
+
+# Loading Clinician Dataset (complete cases)
+
+```{r}
+cliniciandata_comp <- readRDS("cliniciandata_comp.rds")
+
+```
+
+## Baseline correct response table
+
+```{r}
+cliniciandata_comp %>%
+  group_by(specialty.factor) %>%
+  summarize(count=n(),
+            MaleCorrect = length(male_sym.factor[which(male_sym.factor=="No")]),
+            MaleProp = length(male_sym.factor[which(male_sym.factor=="No")])/length(male_sym.factor),
+            FemaleCorrect = length(female_symm.factor[which(female_symm.factor=="No")]),
+            FemaleProp = length(female_symm.factor[which(female_symm.factor=="No")])/length(female_symm.factor))
+
+prop.test(x=c(54,114), n=c(56,117), correct=TRUE) 
+prop.test(x=c(56,114), n=c(56,117), correct=TRUE) 
+
+```
+
+# Loading Student Dataset (complete cases)
+
+```{r}
+studentdata_comp <- readRDS("studentdata_comp.rds")
+
+```
+
+## Baseline correct response table
+
+```{r}
+studentdata_comp %>%
+  group_by(group.factor) %>%
+  summarize(count=n(),
+            MaleCorrect = length(male_sym.factor[which(male_sym.factor=="No")]),
+            MaleProp = length(male_sym.factor[which(male_sym.factor=="No")])/length(male_sym.factor),
+            FemaleCorrect = length(female_symm.factor[which(female_symm.factor=="No")]),
+            FemaleProp = length(female_symm.factor[which(female_symm.factor=="No")])/length(female_symm.factor))
+
+prop.test(x=c(43,71), n=c(45,78), correct=TRUE) 
+prop.test(x=c(40,73), n=c(45,78), correct=TRUE) 
+
+```
+
+# Baseline correct responses combined
+
+```{r}
+prop.table(table(cliniciandata_comp$male_sym.factor))
+prop.table(table(studentdata_comp$male_sym.factor))
+prop.test(x=c(168,114), n=c(173,123), correct = TRUE)
+
+
+prop.table(table(cliniciandata_comp$female_symm.factor))
+prop.table(table(studentdata_comp$female_symm.factor))
+prop.test(x=c(170,113), n=c(173,123), correct = TRUE)
+```
+

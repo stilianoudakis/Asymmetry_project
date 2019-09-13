@@ -1,0 +1,320 @@
+---
+title: "Untitled"
+author: "Spiro Stilianoudakis"
+date: "April 2, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Loading Libraries
+
+```{r}
+library(openxlsx)
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(reshape2)
+```
+
+#Setting Working Directory
+
+```{r}
+setwd("X:/CommonPrograms/Oral Health Services Research Core/Spiro/Asymmetry")
+```
+
+# Loading Clinician Dataset (complete cases)
+
+```{r}
+cliniciandata_comp <- readRDS("cliniciandata_comp.rds")
+
+#remove clinician with prefer not to answer for gender
+cliniciandata_comp$gender.factor <- factor(as.character(cliniciandata_comp$gender.factor))
+```
+
+# Calculating rates of correct responses
+
+## Dentists
+
+### Groups to stratify on: Specialty; Years in practice; Gender
+
+```{r}
+
+for(i in 1:length(table(cliniciandata_notcomp$specialty.factor))){
+  for(j in 1:length(table(cliniciandata_notcomp$year_practice.factor))){
+    for(k in 1:length(table(cliniciandata_notcomp$gender.factor))){
+      data <- cliniciandata_notcomp[which(cliniciandata_notcomp$specialty.factor %in% names(table(cliniciandata_notcomp$specialty.factor))[i] &
+                                      cliniciandata_notcomp$year_practice.factor %in% names(table(cliniciandata_notcomp$year_practice.factor))[j] &
+                                      cliniciandata_notcomp$gender.factor %in% names(table(cliniciandata_notcomp$gender.factor))[k]),]
+      
+      if(dim(data)[1]==0){
+        next}else{
+        strata <- data.frame(Specialty = names(table(cliniciandata_notcomp$specialty.factor))[i],
+                     Years = names(table(cliniciandata_notcomp$year_practice.factor))[j],
+                     Gender = names(table(cliniciandata_notcomp$gender.factor))[k],
+                     male_sym.factor = sum(data[,5]=="No")/length(data[,5]),
+                     male_1mm.factor = sum(data[,6]=="Yes")/length(data[,6]),
+                     male_2mm.factor = sum(data[,7]=="Yes")/length(data[,7]),
+                     male_3mm.factor = sum(data[,8]=="Yes")/length(data[,8]),
+                     male_4mm.factor = sum(data[,9]=="Yes")/length(data[,9]),
+                     male_15mm.factor = sum(data[,10]=="Yes")/length(data[,10]),
+                     male_25mm.factor = sum(data[,11]=="Yes")/length(data[,11]),
+                     male_35mm.factor = sum(data[,12]=="Yes")/length(data[,12]),
+                     female_symm.factor = sum(data[,13]=="No")/length(data[,13]),
+                     female_1mm.factor = sum(data[,14]=="Yes")/length(data[,14]),
+                     female_2mm.factor = sum(data[,15]=="Yes")/length(data[,15]),
+                     female_3mm.factor = sum(data[,16]=="Yes")/length(data[,16]),
+                     female_4mm.factor = sum(data[,17]=="Yes")/length(data[,17]),
+                     female_15mm.factor = sum(data[,18]=="Yes")/length(data[,18]),
+                     female_25.factor = sum(data[,19]=="Yes")/length(data[,19]),
+                     female_35mm.factor = sum(data[,20]=="Yes")/length(data[,20]))
+      
+        strata <- melt(strata)
+      
+        saveRDS(strata, paste0("X:/CommonPrograms/Oral Health Services Research Core/Spiro/Asymmetry/stratified_data/", 
+                             "dentists_", 
+                             gsub(" ", "_", names(table(cliniciandata_notcomp$specialty.factor))[i]),
+                             "_",
+                             gsub(" ", "_", names(table(cliniciandata_notcomp$year_practice.factor))[j]),
+                             "_",
+                             gsub(" ", "_", names(table(cliniciandata_notcomp$gender.factor))[k]),
+                             ".rds"))
+      }
+    }
+  }
+}
+
+#loop through and concatenate files
+setwd("X:/CommonPrograms/Oral Health Services Research Core/Spiro/Asymmetry/stratified_data")
+alldentistdata <- do.call('rbind', lapply(list.files(), readRDS))
+
+
+```
+
+####Comparing dentist specialy
+
+```{r}
+for(i in 1:length(table(cliniciandata_notcomp$specialty.factor))){
+      data <- cliniciandata_notcomp[which(cliniciandata_notcomp$specialty.factor %in% names(table(cliniciandata_notcomp$specialty.factor))[i]),]
+      
+      if(dim(data)[1]==0){
+        next}else{
+        strata <- data.frame(Specialty = names(table(cliniciandata_notcomp$specialty.factor))[i],
+                     male_sym.factor = sum(data[,5]=="No", na.rm = TRUE)/length(data[,5]),
+                     male_1mm.factor = sum(data[,6]=="Yes", na.rm = TRUE)/length(data[,6]),
+                     male_2mm.factor = sum(data[,7]=="Yes", na.rm = TRUE)/length(data[,7]),
+                     male_3mm.factor = sum(data[,8]=="Yes", na.rm = TRUE)/length(data[,8]),
+                     male_4mm.factor = sum(data[,9]=="Yes", na.rm = TRUE)/length(data[,9]),
+                     male_15mm.factor = sum(data[,10]=="Yes", na.rm = TRUE)/length(data[,10]),
+                     male_25mm.factor = sum(data[,11]=="Yes", na.rm = TRUE)/length(data[,11]),
+                     male_35mm.factor = sum(data[,12]=="Yes", na.rm = TRUE)/length(data[,12]),
+                     female_symm.factor = sum(data[,13]=="No", na.rm = TRUE)/length(data[,13]),
+                     female_1mm.factor = sum(data[,14]=="Yes", na.rm = TRUE)/length(data[,14]),
+                     female_2mm.factor = sum(data[,15]=="Yes", na.rm = TRUE)/length(data[,15]),
+                     female_3mm.factor = sum(data[,16]=="Yes", na.rm = TRUE)/length(data[,16]),
+                     female_4mm.factor = sum(data[,17]=="Yes", na.rm = TRUE)/length(data[,17]),
+                     female_15mm.factor = sum(data[,18]=="Yes", na.rm = TRUE)/length(data[,18]),
+                     female_25.factor = sum(data[,19]=="Yes", na.rm = TRUE)/length(data[,19]),
+                     female_35mm.factor = sum(data[,20]=="Yes", na.rm = TRUE)/length(data[,20]))
+      
+        strata <- melt(strata)
+      
+        saveRDS(strata, paste0("X:/CommonPrograms/Oral Health Services Research Core/Spiro/Asymmetry/stratified_data/dentists/specialty/", 
+                             "dentists_", 
+                             gsub(" ", "_", names(table(cliniciandata_notcomp$specialty.factor))[i]),
+                             "_",
+                             ".rds"))
+      }
+}
+
+#loop through and concatenate files
+setwd("X:/CommonPrograms/Oral Health Services Research Core/Spiro/Asymmetry/stratified_data/dentists/specialty")
+alldentistdata <- do.call('rbind', lapply(list.files(), readRDS))
+
+alldentistdata$ImageGender <- factor(rep(c(rep("Male", 8), rep("Female", 8)),2), levels=c("Male", "Female"))
+ggplot(alldentistdata, aes(x = variable, y = value, color = Specialty, group = Specialty)) +
+  geom_line(size=2)+
+  geom_point(size=5)+
+  facet_grid(~ ImageGender, scales = "free", space = "free") +
+  facet_grid(~ ImageGender, scales = "free", space = "free") +
+  scale_x_discrete(labels=c("Symmetric", 
+                            "1mm",
+                            "2mm",
+                            "3mm",
+                            "4mm",
+                            "15mm",
+                            "25mm",
+                            "35mm"))+
+  scale_color_discrete(name="Specialty")+
+  xlab("Asymmetry") +
+  ylab("Correct Response Rate") +
+  theme_minimal() +
+  theme_bw() +
+  theme(axis.text.x = element_text(size=15,
+	                                 angle = 45, 
+                                   #margin = ggplot2::margin(t = 35),
+                                   hjust = 1
+	                                 ),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20),
+        legend.text=element_text(size=15),
+        legend.title=element_text(size=20),
+	      plot.title = element_text(size=20))
+
+```
+
+####Comparing dentist gender
+
+```{r}
+for(i in 1:length(table(cliniciandata_notcomp$gender.factor))){
+      data <- cliniciandata_notcomp[which(cliniciandata_notcomp$gender.factor %in% names(table(cliniciandata_notcomp$gender.factor))[i]),]
+      
+      if(dim(data)[1]==0){
+        next}else{
+        strata <- data.frame(Gender = names(table(cliniciandata_notcomp$gender.factor))[i],
+                     male_sym.factor = sum(data[,5]=="No", na.rm = TRUE)/length(data[,5]),
+                     male_1mm.factor = sum(data[,6]=="Yes", na.rm = TRUE)/length(data[,6]),
+                     male_2mm.factor = sum(data[,7]=="Yes", na.rm = TRUE)/length(data[,7]),
+                     male_3mm.factor = sum(data[,8]=="Yes", na.rm = TRUE)/length(data[,8]),
+                     male_4mm.factor = sum(data[,9]=="Yes", na.rm = TRUE)/length(data[,9]),
+                     male_15mm.factor = sum(data[,10]=="Yes", na.rm = TRUE)/length(data[,10]),
+                     male_25mm.factor = sum(data[,11]=="Yes", na.rm = TRUE)/length(data[,11]),
+                     male_35mm.factor = sum(data[,12]=="Yes", na.rm = TRUE)/length(data[,12]),
+                     female_symm.factor = sum(data[,13]=="No", na.rm = TRUE)/length(data[,13]),
+                     female_1mm.factor = sum(data[,14]=="Yes", na.rm = TRUE)/length(data[,14]),
+                     female_2mm.factor = sum(data[,15]=="Yes", na.rm = TRUE)/length(data[,15]),
+                     female_3mm.factor = sum(data[,16]=="Yes", na.rm = TRUE)/length(data[,16]),
+                     female_4mm.factor = sum(data[,17]=="Yes", na.rm = TRUE)/length(data[,17]),
+                     female_15mm.factor = sum(data[,18]=="Yes", na.rm = TRUE)/length(data[,18]),
+                     female_25.factor = sum(data[,19]=="Yes", na.rm = TRUE)/length(data[,19]),
+                     female_35mm.factor = sum(data[,20]=="Yes", na.rm = TRUE)/length(data[,20]))
+      
+        strata <- melt(strata)
+      
+        saveRDS(strata, paste0("X:/CommonPrograms/Oral Health Services Research Core/Spiro/Asymmetry/stratified_data/dentists/gender/", 
+                             "dentists_", 
+                             gsub(" ", "_", names(table(cliniciandata_notcomp$gender.factor))[i]),
+                             "_",
+                             ".rds"))
+      }
+}
+
+#loop through and concatenate files
+setwd("X:/CommonPrograms/Oral Health Services Research Core/Spiro/Asymmetry/stratified_data/dentists/gender")
+alldentistdata <- do.call('rbind', lapply(list.files(), readRDS))
+
+alldentistdata$ImageGender <- factor(rep(c(rep("Male", 8), rep("Female", 8)),2), levels=c("Male", "Female"))
+ggplot(alldentistdata, aes(x = variable, y = value, color = Gender, group = Gender)) +
+  geom_line(size=2)+
+  geom_point(size=5)+
+  facet_grid(~ ImageGender, scales = "free", space = "free") +
+  facet_grid(~ ImageGender, scales = "free", space = "free") +
+  scale_x_discrete(labels=c("Symmetric", 
+                            "1mm",
+                            "2mm",
+                            "3mm",
+                            "4mm",
+                            "15mm",
+                            "25mm",
+                            "35mm"))+
+  scale_color_discrete(name="Gender")+
+  xlab("Asymmetry") +
+  ylab("Correct Response Rate") +
+  theme_minimal() +
+  theme_bw() +
+  theme(axis.text.x = element_text(size=15,
+	                                 angle = 45, 
+                                   #margin = ggplot2::margin(t = 35),
+                                   hjust = 1
+	                                 ),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20),
+        legend.text=element_text(size=15),
+        legend.title=element_text(size=20),
+	      plot.title = element_text(size=20))
+
+```
+
+####Comparing dentist years experience
+
+```{r}
+for(i in 1:length(table(cliniciandata_notcomp$year_practice.factor))){
+      data <- cliniciandata_notcomp[which(cliniciandata_notcomp$year_practice.factor %in% names(table(cliniciandata_notcomp$year_practice.factor))[i]),]
+      
+      if(dim(data)[1]==0){
+        next}else{
+        strata <- data.frame(Years = names(table(cliniciandata_notcomp$year_practice.factor))[i],
+                     male_sym.factor = sum(data[,5]=="No", na.rm = TRUE)/length(data[,5]),
+                     male_1mm.factor = sum(data[,6]=="Yes", na.rm = TRUE)/length(data[,6]),
+                     male_2mm.factor = sum(data[,7]=="Yes", na.rm = TRUE)/length(data[,7]),
+                     male_3mm.factor = sum(data[,8]=="Yes", na.rm = TRUE)/length(data[,8]),
+                     male_4mm.factor = sum(data[,9]=="Yes", na.rm = TRUE)/length(data[,9]),
+                     male_15mm.factor = sum(data[,10]=="Yes", na.rm = TRUE)/length(data[,10]),
+                     male_25mm.factor = sum(data[,11]=="Yes", na.rm = TRUE)/length(data[,11]),
+                     male_35mm.factor = sum(data[,12]=="Yes", na.rm = TRUE)/length(data[,12]),
+                     female_symm.factor = sum(data[,13]=="No", na.rm = TRUE)/length(data[,13]),
+                     female_1mm.factor = sum(data[,14]=="Yes", na.rm = TRUE)/length(data[,14]),
+                     female_2mm.factor = sum(data[,15]=="Yes", na.rm = TRUE)/length(data[,15]),
+                     female_3mm.factor = sum(data[,16]=="Yes", na.rm = TRUE)/length(data[,16]),
+                     female_4mm.factor = sum(data[,17]=="Yes", na.rm = TRUE)/length(data[,17]),
+                     female_15mm.factor = sum(data[,18]=="Yes", na.rm = TRUE)/length(data[,18]),
+                     female_25.factor = sum(data[,19]=="Yes", na.rm = TRUE)/length(data[,19]),
+                     female_35mm.factor = sum(data[,20]=="Yes", na.rm = TRUE)/length(data[,20]))
+      
+        strata <- melt(strata)
+      
+        saveRDS(strata, paste0("X:/CommonPrograms/Oral Health Services Research Core/Spiro/Asymmetry/stratified_data/dentists/years/", 
+                             "dentists_", 
+                             gsub(" ", "_", names(table(cliniciandata_notcomp$year_practice.factor))[i]),
+                             "_",
+                             ".rds"))
+      }
+}
+
+#loop through and concatenate files
+setwd("X:/CommonPrograms/Oral Health Services Research Core/Spiro/Asymmetry/stratified_data/dentists/years")
+alldentistdata <- do.call('rbind', lapply(list.files(), readRDS))
+
+alldentistdata$ImageGender <- factor(rep(c(rep("Male", 8), rep("Female", 8)),5), levels=c("Male", "Female"))
+alldentistdata$Years <- factor(alldentistdata$Years, levels=c("0-5 years","6-10 years","11-15 years","16-20 years","21+ years"))
+ggplot(alldentistdata, aes(x = variable, y = value, color = Years, group = Years)) +
+  geom_line(size=2)+
+  geom_point(size=5)+
+  facet_grid(~ ImageGender, scales = "free", space = "free") +
+  facet_grid(~ ImageGender, scales = "free", space = "free") +
+  scale_x_discrete(labels=c("Symmetric", 
+                            "1mm",
+                            "2mm",
+                            "3mm",
+                            "4mm",
+                            "15mm",
+                            "25mm",
+                            "35mm"))+
+  scale_color_discrete(name="Gender")+
+  xlab("Asymmetry") +
+  ylab("Correct Response Rate") +
+  theme_minimal() +
+  theme_bw() +
+  theme(axis.text.x = element_text(size=15,
+	                                 angle = 45, 
+                                   #margin = ggplot2::margin(t = 35),
+                                   hjust = 1
+	                                 ),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20),
+        legend.text=element_text(size=15),
+        legend.title=element_text(size=20),
+	      plot.title = element_text(size=20))
+
+```
+
+
+
+## Students
+
+### Groups to stratify on: Group; year; gender

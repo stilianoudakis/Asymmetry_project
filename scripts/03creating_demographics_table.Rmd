@@ -1,0 +1,62 @@
+---
+title: "Making Tables"
+author: "Spiro Stilianoudakis"
+date: "April 25, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(openxlsx)
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(reshape2)
+```
+
+#Setting Working Directory
+
+```{r}
+setwd("X:/CommonPrograms/Oral Health Services Research Core/Spiro/Asymmetry")
+```
+
+# Loading Clinician Dataset (complete cases)
+
+```{r}
+cliniciandata_comp <- readRDS("cliniciandata_comp.rds")
+
+#remove clinician with prefer not to answer for gender
+#cliniciandata_comp$gender.factor <- factor(as.character(cliniciandata_comp$gender.factor))
+```
+
+## Tables
+
+```{r}
+lapply(cliniciandata_comp[,2:4], table)
+```
+
+
+# Loading Student Dataset (complete cases)
+
+```{r}
+studentdata_comp <- readRDS("studentdata_comp.rds")
+
+#remove clinician with prefer not to answer for gender
+#studentdata_comp$gender.factor <- factor(as.character(studentdata_comp$gender.factor))
+ 
+#recode age group; combine 27-28, 29-30, and >30
+#studentdata_comp$age.factor <- as.character(studentdata_comp$age.factor)
+#studentdata_comp$age.factor[which(studentdata_comp$age.factor=="27-28" |
+#                                    studentdata_comp$age.factor=="29-30" |
+#                                    studentdata_comp$age.factor==">30")] <- ">26"
+#studentdata_comp$age.factor <- factor(studentdata_comp$age.factor, levels=c("21-22", "23-24", "25-26", ">26"))
+```
+
+## Tables
+
+```{r}
+lapply(studentdata_comp[,2:6], table)
+```

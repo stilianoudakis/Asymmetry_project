@@ -1,0 +1,200 @@
+---
+title: "Cleaning Stacked Datasets"
+author: "Spiro Stilianoudakis"
+date: "April 25, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(openxlsx)
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(reshape2)
+library(sas7bdat)
+```
+
+# Set working directory
+
+```{r}
+setwd("X:/CommonPrograms/Oral Health Services Research Core/Spiro/Asymmetry")
+```
+
+# Read in stacked clinician data
+
+```{r}
+stacked_clinician <- read.sas7bdat("clinician_stacked.sas7bdat")
+```
+
+## Clean data
+
+```{r}
+#keep specific variables
+stacked_clinician <- stacked_clinician[,c(1:4,8,9,10)]
+
+#recode 25 -> 25mm
+stacked_clinician$asymmetry <- as.character(stacked_clinician$asymmetry)
+stacked_clinician$asymmetry[which(stacked_clinician$asymmetry=="25")] <- "25mm"
+
+#recode decimals for asymmetry
+stacked_clinician$asymmetry[which(stacked_clinician$asymmetry=="15mm")] <- "1.5mm"
+stacked_clinician$asymmetry[which(stacked_clinician$asymmetry=="25mm")] <- "2.5mm"
+stacked_clinician$asymmetry[which(stacked_clinician$asymmetry=="35mm")] <- "3.5mm"
+
+stacked_clinician$asymmetry <- factor(as.character(stacked_clinician$asymmetry),
+                                      levels=c("1mm",
+                                               "1.5mm",
+                                               "2mm",
+                                               "2.5mm",
+                                               "3mm",
+                                               "3.5mm",
+                                               "4mm"))
+table(stacked_clinician$asymmetry)
+
+#recoding specialty
+stacked_clinician$specialty <- factor(ifelse(stacked_clinician$specialty==1, "Oral and Maxillofacial Surgery", "Orthodontist"),
+                                      levels = c("Oral and Maxillofacial Surgery", "Orthodontist"))
+
+#recoding gender
+stacked_clinician$gender <- factor(ifelse(stacked_clinician$gender==1, "Male", "Female"),
+                                      levels = c("Male", "Female"))
+
+#recoding year in practice
+stacked_clinician$year_practice <- factor(ifelse(stacked_clinician$year_practice==1, "0-5 years",
+                                                 ifelse(stacked_clinician$year_practice==2, "6-10 years",
+                                                        ifelse(stacked_clinician$year_practice==3, "11-15 years",
+                                                               ifelse(stacked_clinician$year_practice==4, "16-20 years", "21+ years")))),
+                                          levels=c("0-5 years","6-10 years","11-15 years","16-20 years","21+ years"))
+
+#recoding gender of the photo
+stacked_clinician$gender_photo <- factor(ifelse(as.character(stacked_clinician$gender_photo)=="m", "Male", "Female"),
+                                         levels=c("Male", "Female"))
+
+#recoding response
+stacked_clinician$correct <- factor(stacked_clinician$correct)
+
+#adding variable to denote respondent group
+stacked_clinician$respondent_group <- "Clinician"
+
+#sorting data
+stacked_clinician <- stacked_clinician[order(stacked_clinician$record_id, stacked_clinician$gender_photo, stacked_clinician$asymmetry, decreasing = FALSE),]
+
+#reordering columns
+stacked_clinician <- stacked_clinician[,c(1,8,3,2,4,6,7,5)]
+```
+
+## Saving Cleaned stacked clinician data
+
+```{r}
+saveRDS(stacked_clinician, "stacked_clinician.rds")
+```
+
+
+# Read in stacked student data
+
+```{r}
+stacked_student <- read.sas7bdat("students_stacked.sas7bdat")
+```
+
+## Clean data
+
+```{r}
+#remove record id 33
+stacked_student <- stacked_student[-which(stacked_student$record_id=="33"),]
+
+#keep specific variables
+stacked_student <- stacked_student[,c(1:5,9:11)]
+
+#recode 25 -> 25mm
+stacked_student$asymmetry <- as.character(stacked_student$asymmetry)
+stacked_student$asymmetry[which(stacked_student$asymmetry=="25")] <- "25mm"
+
+#recode decimals for asymmetry
+stacked_student$asymmetry[which(stacked_student$asymmetry=="15mm")] <- "1.5mm"
+stacked_student$asymmetry[which(stacked_student$asymmetry=="25mm")] <- "2.5mm"
+stacked_student$asymmetry[which(stacked_student$asymmetry=="35mm")] <- "3.5mm"
+
+stacked_student$asymmetry <- factor(as.character(stacked_student$asymmetry),
+                                      levels=c("1mm",
+                                               "1.5mm",
+                                               "2mm",
+                                               "2.5mm",
+                                               "3mm",
+                                               "3.5mm",
+                                               "4mm"))
+table(stacked_student$asymmetry)
+
+#recoding gender
+stacked_student$gender <- factor(ifelse(stacked_student$gender==1, "Male", "Female"),
+                                      levels = c("Male", "Female"))
+
+#recoding group
+stacked_student$group <- factor(ifelse(stacked_student$group==1, "Medicine","Pharmacy"),
+                                      levels = c("Medicine","Pharmacy"))
+
+#recoding year
+stacked_student$year <- factor(ifelse(stacked_student$year==1, "1st",
+                                                 ifelse(stacked_student$year==2, "2nd",
+                                                        ifelse(stacked_student$year==3, "3rd", "4th"))),
+                                          levels=c("1st","2nd","3rd","4th"))
+
+#recoding age
+c("21-22","23-24","25-26","27-28","29-30",">30")
+stacked_student$age <- factor(ifelse(stacked_student$age==1, "21-22",
+                                     ifelse(stacked_student$age==2, "23-24",
+                                            ifelse(stacked_student$age==3, "25-26",
+                                                   ifelse(stacked_student$age==4, "27-28",
+                                                          ifelse(stacked_student$age==5, "29-30",">30"))))),
+                              levels=c("21-22","23-24","25-26","27-28","29-30",">30"))
+stacked_student$age <- as.character(stacked_student$age)
+stacked_student$age[which(stacked_student$age=="27-28" |
+                            stacked_student$age=="29-30" |
+                            stacked_student$age==">30")] <- ">26" 
+stacked_student$age <- factor(stacked_student$age, levels=c("21-22","23-24","25-26",">26"))
+
+#recoding gender of the photo
+stacked_student$gender_photo <- factor(ifelse(as.character(stacked_student$gender_photo)=="m", "Male", "Female"),
+                                         levels=c("Male", "Female"))
+
+#recoding response
+stacked_student$correct <- factor(stacked_student$correct)
+
+#adding variable to denote respondent group
+stacked_student$respondent_group <- "Student"
+
+#sorting data
+stacked_student <- stacked_student[order(stacked_student$record_id, stacked_student$gender_photo, stacked_student$asymmetry, decreasing = FALSE),]
+
+#reordering columns
+stacked_student <- stacked_student[,c(1,9,2,3,4,5,7,8,6)]
+```
+
+## Saving Cleaned stacked student data
+
+```{r}
+saveRDS(stacked_student, "stacked_student.rds")
+```
+
+# Combining stacked datasets
+
+```{r}
+stacked_all <- rbind.data.frame(stacked_clinician[,c(2,6,7,8)],
+                                stacked_student[,c(2,7,8,9)])
+
+stacked_all$respondent_group <- factor(stacked_all$respondent_group, levels=c("Clinician", "Student"))
+
+stacked_all$ID <- sort(rep(seq(1,296),14))
+
+stacked_all <- stacked_all[,c(5,1:4)]
+```
+
+##Saving combined stacked dataset
+
+```{r}
+saveRDS(stacked_all, "stacked_all.rds")
+```
+

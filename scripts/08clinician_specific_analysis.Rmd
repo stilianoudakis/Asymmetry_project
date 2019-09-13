@@ -1,0 +1,114 @@
+---
+title: "Clinician-Specific Analysis"
+author: "Spiro Stilianoudakis"
+date: "May 13, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Loading Packages
+
+```{r}
+library(dplyr)
+library(lme4)
+library(car)
+library(geepack)
+library(gee)
+library(ggplot2)
+library(lsmeans)
+library(multcompView)
+```
+
+# Set working directory
+
+```{r}
+setwd("X:/CommonPrograms/Oral Health Services Research Core/Spiro/Asymmetry")
+```
+
+
+# Reading in stacked dataset
+
+```{r}
+clinician <- readRDS("stacked_clinician.rds")
+clinician$correct <- relevel(clinician$correct, ref = 1)
+clinician$record_id <- as.integer(clinician$record_id)
+
+#continuous repeated measures variable
+clinician$asymmetry_cont <- as.numeric(gsub("mm","",clinician$asymmetry))
+  
+#attach(clinician)
+
+table(clinician$specialty)
+```
+
+# Fit a generalized estimating equation
+
+## Image Gender: Male
+
+
+```{r}
+clinician.male <- clinician[which(clinician$gender_photo=="Male"),]
+clinician.male$respondent_group <- relevel(clinician.male$specialty, ref = "Oral and Maxillofacial Surgery")
+#clinician.male$asymmetry <- relevel(clinician.male$asymmetry, ref = "4mm")
+clinician.male$correct <- as.integer(as.character(clinician.male$correct))
+
+#clinician.male.gee <- gee(formula = correct ~ specialty*asymmetry_cont,
+#                   family  = binomial(link = "logit"),
+#                   id      = record_id,
+#                   data    = clinician.male,
+#                   corstr="AR-M", 
+#                   Mv=1,
+#                   maxiter=10000,
+#                   tol = 0.0001
+#                   )
+
+clinician.male.gee <- geeglm(formula = correct ~ specialty*asymmetry_cont,
+                   family  = binomial(link = "logit"),
+                   id      = record_id,
+                   data    = clinician.male,
+                   corstr="ar1",
+                   std.err="san.se"
+                   )
+
+summary(clinician.male.gee)
+
+table(clinician.male$specialty, clinician.male$correct, clinician.male$asymmetry)
+
+```
+
+## Image Gender: Female
+
+```{r}
+clinician.female <- clinician[which(clinician$gender_photo=="Female"),]
+clinician.female$respondent_group <- relevel(clinician.female$specialty, ref = "Oral and Maxillofacial Surgery")
+#clinician.female$asymmetry <- relevel(clinician.female$asymmetry, ref = "4mm")
+clinician.female$correct <- as.integer(as.character(clinician.female$correct))
+
+#clinician.female.gee <- gee(formula = correct ~ specialty*asymmetry_cont,
+#                   family  = binomial(link = "logit"),
+#                   id      = record_id,
+#                   data    = clinician.female,
+#                   corstr="AR-M", 
+#                   Mv=1,
+#                   maxiter=10000,
+#                   tol = 0.0001
+#                   )
+
+clinician.female.gee <- geeglm(formula = correct ~ specialty*asymmetry,
+                   family  = binomial(link = "logit"),
+                   id      = record_id,
+                   data    = clinician.female,
+                   corstr="ar1",
+                   std.err="san.se"
+                   )
+
+summary(clinician.female.gee)
+
+table(clinician.female$specialty, clinician.female$correct, clinician.female$asymmetry)
+
+
+```
+

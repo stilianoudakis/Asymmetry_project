@@ -1,0 +1,351 @@
+---
+title: "Correct Response Plots: Clinicians vs Students"
+author: "Spiro Stilianoudakis"
+date: "April 25, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(openxlsx)
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(reshape2)
+```
+
+#Setting Working Directory
+
+```{r}
+setwd("X:/CommonPrograms/Oral Health Services Research Core/Spiro/Asymmetry")
+```
+
+# Loading Clinician Dataset (complete cases)
+
+```{r}
+cliniciandata_comp <- readRDS("cliniciandata_comp.rds")
+```
+
+# Loading Student Dataset (complete cases)
+
+```{r}
+studentdata_comp <- readRDS("studentdata_comp.rds")
+```
+
+
+## Creating long form data with correct response rates
+
+###Clinicians
+
+```{r}
+clinician_response <- data.frame(male_sym.factor = sum(cliniciandata_comp$male_sym.factor=="No")/length(cliniciandata_comp$male_sym.factor),
+                                 male_1mm.factor = sum(cliniciandata_comp$male_1mm.factor=="Yes")/length(cliniciandata_comp$male_1mm.factor),
+                                 male_1.5mm.factor = sum(cliniciandata_comp$male_15mm.factor=="Yes")/length(cliniciandata_comp$male_15mm.factor),
+                                 male_2mm.factor = sum(cliniciandata_comp$male_2mm.factor=="Yes")/length(cliniciandata_comp$male_2mm.factor),
+                                 male_2.5mm.factor = sum(cliniciandata_comp$male_25mm.factor=="Yes")/length(cliniciandata_comp$male_25mm.factor),
+                                 male_3mm.factor = sum(cliniciandata_comp$male_3mm.factor=="Yes")/length(cliniciandata_comp$male_3mm.factor),
+                                 male_3.5mm.factor = sum(cliniciandata_comp$male_35mm.factor=="Yes")/length(cliniciandata_comp$male_35mm.factor),
+                                 male_4mm.factor = sum(cliniciandata_comp$male_4mm.factor=="Yes")/length(cliniciandata_comp$male_4mm.factor),
+                                 
+                                 female_sym.factor = sum(cliniciandata_comp$female_symm.factor=="No")/length(cliniciandata_comp$female_symm.factor),
+                                 female_1mm.factor = sum(cliniciandata_comp$female_1mm.factor=="Yes")/length(cliniciandata_comp$female_1mm.factor),
+                                 female_1.5mm.factor = sum(cliniciandata_comp$female_15mm.factor=="Yes")/length(cliniciandata_comp$female_15mm.factor),
+                                 female_2mm.factor = sum(cliniciandata_comp$female_2mm.factor=="Yes")/length(cliniciandata_comp$female_2mm.factor),
+                                 female_2.5mm.factor = sum(cliniciandata_comp$female_25.factor=="Yes")/length(cliniciandata_comp$female_25.factor),
+                                 female_3mm.factor = sum(cliniciandata_comp$female_3mm.factor=="Yes")/length(cliniciandata_comp$female_3mm.factor),
+                                 female_3.5mm.factor = sum(cliniciandata_comp$female_35mm.factor=="Yes")/length(cliniciandata_comp$female_35mm.factor),
+                                 female_4mm.factor = sum(cliniciandata_comp$female_4mm.factor=="Yes")/length(cliniciandata_comp$female_4mm.factor))
+                                 
+              
+clinician_long <- melt(clinician_response)                
+clinician_long$Respondent <- "Clinician"
+clinician_long$Asymmetry <- rep(c("Symmetric", "1 mm", "1.5 mm", "2 mm", "2.5 mm", "3 mm", "3.5 mm", "4 mm"), 2)
+clinician_long$Asymmetry <- factor(clinician_long$Asymmetry, levels = c("Symmetric", "1 mm", "1.5 mm", "2 mm", "2.5 mm", "3 mm", "3.5 mm", "4 mm"))
+clinician_long$Image_gender <- c(rep("Male", 8), rep("Female", 8))
+clinician_long$Image_gender <- factor(clinician_long$Image_gender, levels = c("Male", "Female"))
+
+
+```
+
+### Proportion test for baseline
+
+```{r}
+prop.test(c(168,114),c(173,123))
+prop.test(c(168,114),c(173,123), alternative = "less")
+```
+
+
+####Oral and Maxillofacial Surgery vs Orthodontist
+
+```{r}
+clinician_specific_response <- data.frame(#Oral and Maxillofacial Surgery
+								 ##Male photo
+								 male_sym.factor.oms = sum(cliniciandata_comp$male_sym.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]=="No")/length(cliniciandata_comp$male_sym.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]),
+                                 male_1mm.factor.oms = sum(cliniciandata_comp$male_1mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$male_1mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]),
+                                 male_1.5mm.factor.oms = sum(cliniciandata_comp$male_15mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$male_15mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]),
+                                 male_2mm.factor.oms = sum(cliniciandata_comp$male_2mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$male_2mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]),
+                                 male_2.5mm.factor.oms = sum(cliniciandata_comp$male_25mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$male_25mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]),
+                                 male_3mm.factor.oms = sum(cliniciandata_comp$male_3mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$male_3mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]),
+                                 male_3.5mm.factor.oms = sum(cliniciandata_comp$male_35mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$male_35mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]),
+                                 male_4mm.factor.oms = sum(cliniciandata_comp$male_4mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$male_4mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]),
+                                 
+								 ##Female photo
+                                 female_sym.factor.oms = sum(cliniciandata_comp$female_symm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]=="No")/length(cliniciandata_comp$female_symm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]),
+                                 female_1mm.factor.oms = sum(cliniciandata_comp$female_1mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$female_1mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]),
+                                 female_1.5mm.factor.oms = sum(cliniciandata_comp$female_15mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$female_15mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]),
+                                 female_2mm.factor.oms = sum(cliniciandata_comp$female_2mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$female_2mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]),
+                                 female_2.5mm.factor.oms = sum(cliniciandata_comp$female_25.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$female_25.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]),
+                                 female_3mm.factor.oms = sum(cliniciandata_comp$female_3mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$female_3mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]),
+                                 female_3.5mm.factor.oms = sum(cliniciandata_comp$female_35mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$female_35mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]),
+                                 female_4mm.factor.oms = sum(cliniciandata_comp$female_4mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$female_4mm.factor[cliniciandata_comp$specialty.factor=="Oral and Maxillofacial Surgery"]),
+								 
+								 #Orthodontist
+								 ##Male photo
+								 male_sym.factor.or = sum(cliniciandata_comp$male_sym.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]=="No")/length(cliniciandata_comp$male_sym.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]),
+                                 male_1mm.factor.or = sum(cliniciandata_comp$male_1mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$male_1mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]),
+                                 male_1.5mm.factor.or = sum(cliniciandata_comp$male_15mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$male_15mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]),
+                                 male_2mm.factor.or = sum(cliniciandata_comp$male_2mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$male_2mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]),
+                                 male_2.5mm.factor.or = sum(cliniciandata_comp$male_25mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$male_25mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]),
+                                 male_3mm.factor.or = sum(cliniciandata_comp$male_3mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$male_3mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]),
+                                 male_3.5mm.factor.or = sum(cliniciandata_comp$male_35mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$male_35mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]),
+                                 male_4mm.factor.or = sum(cliniciandata_comp$male_4mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$male_4mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]),
+                                 
+								 ##Female photo
+                                 female_sym.factor.or = sum(cliniciandata_comp$female_symm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]=="No")/length(cliniciandata_comp$female_symm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]),
+                                 female_1mm.factor.or = sum(cliniciandata_comp$female_1mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$female_1mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]),
+                                 female_1.5mm.factor.or = sum(cliniciandata_comp$female_15mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$female_15mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]),
+                                 female_2mm.factor.or = sum(cliniciandata_comp$female_2mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$female_2mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]),
+                                 female_2.5mm.factor.or = sum(cliniciandata_comp$female_25.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$female_25.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]),
+                                 female_3mm.factor.or = sum(cliniciandata_comp$female_3mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$female_3mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]),
+                                 female_3.5mm.factor.or = sum(cliniciandata_comp$female_35mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$female_35mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]),
+                                 female_4mm.factor.or = sum(cliniciandata_comp$female_4mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"]=="Yes")/length(cliniciandata_comp$female_4mm.factor[cliniciandata_comp$specialty.factor!="Oral and Maxillofacial Surgery"])
+								 
+								 )
+                                 
+              
+clinician_specific_response_long <- melt(clinician_specific_response)                
+clinician_specific_response_long$Specialty <- c(rep("Oral and Maxillofacial Surgery", 16), rep("Orthodontist", 16))
+clinician_specific_response_long$Asymmetry <- rep(c("Symmetric", "1 mm", "1.5 mm", "2 mm", "2.5 mm", "3 mm", "3.5 mm", "4 mm"), 4)
+clinician_specific_response_long$Asymmetry <- factor(clinician_specific_response_long$Asymmetry, levels = c("Symmetric", "1 mm", "1.5 mm", "2 mm", "2.5 mm", "3 mm", "3.5 mm", "4 mm"))
+clinician_specific_response_long$Image_gender <- rep(c(rep("Male", 8), rep("Female", 8)),2)
+clinician_specific_response_long$Image_gender <- factor(clinician_specific_response_long$Image_gender, levels = c("Male", "Female"))
+
+
+#without baseline
+clinician_specific_response_long <- clinician_specific_response_long[-which(clinician_specific_response_long$Asymmetry=="Symmetric"),]
+
+ggplot(clinician_specific_response_long, aes(x = Asymmetry, y = value, color = Specialty, group = Specialty)) +
+  geom_line(size=2)+
+  geom_point(size=5)+
+  facet_grid(Image_gender ~ ., scales = "free", space = "free") +
+  scale_color_discrete(name="Clinician Specialty", labels=c("Oral and Maxillofacial\nSurgeons", "Orthodontists"))+
+  scale_y_continuous(limits=c(0,1), labels=c(0,25,50,75,100))+
+  xlab("Asymmetry") +
+  ylab("Percentage of Correct Response") +
+  theme_minimal() +
+  theme_bw() +
+  theme(axis.text.x = element_text(size=15,
+	                                 angle = 45, 
+                                   #margin = ggplot2::margin(t = 35),
+                                   hjust = 1
+	                                 ),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20),
+        strip.text.y = element_text(size = 15),
+        legend.text=element_text(size=15),
+        legend.title=element_text(size=20),
+	      plot.title = element_text(size=20))
+
+```
+
+
+###Students
+
+### Proportion test for baseline
+
+```{r}
+prop.test(c(170,113),c(173,123))
+prop.test(c(170,113),c(173,123), alternative = "less")
+```
+
+
+```{r}
+student_response <- data.frame(male_sym.factor = sum(studentdata_comp$male_sym.factor=="No")/length(studentdata_comp$male_sym.factor),
+                               male_1mm.factor = sum(studentdata_comp$male_1mm.factor=="Yes")/length(studentdata_comp$male_1mm.factor),
+                               male_1.5mm.factor = sum(studentdata_comp$male_15mm.factor=="Yes")/length(studentdata_comp$male_15mm.factor),
+                               male_2mm.factor = sum(studentdata_comp$male_2mm.factor=="Yes")/length(studentdata_comp$male_2mm.factor),
+                               male_2.5mm.factor = sum(studentdata_comp$male_25mm.factor=="Yes")/length(studentdata_comp$male_25mm.factor),
+                               male_3mm.factor = sum(studentdata_comp$male_3mm.factor=="Yes")/length(studentdata_comp$male_3mm.factor),
+                               male_3.5mm.factor = sum(studentdata_comp$male_35mm.factor=="Yes")/length(studentdata_comp$male_35mm.factor),
+                               male_4mm.factor = sum(studentdata_comp$male_4mm.factor=="Yes")/length(studentdata_comp$male_4mm.factor),
+                               
+                               female_sym.factor = sum(studentdata_comp$female_symm.factor=="No")/length(studentdata_comp$female_symm.factor),
+                               female_1mm.factor = sum(studentdata_comp$female_1mm.factor=="Yes")/length(studentdata_comp$female_1mm.factor),
+                               female_1.5mm.factor = sum(studentdata_comp$female_15mm.factor=="Yes")/length(studentdata_comp$female_15mm.factor),
+                               female_2mm.factor = sum(studentdata_comp$female_2mm.factor=="Yes")/length(studentdata_comp$female_2mm.factor),
+                               female_2.5mm.factor = sum(studentdata_comp$female_25.factor=="Yes")/length(studentdata_comp$female_25.factor),
+                               female_3mm.factor = sum(studentdata_comp$female_3mm.factor=="Yes")/length(studentdata_comp$female_3mm.factor),
+                               female_3.5mm.factor = sum(studentdata_comp$female_35mm.factor=="Yes")/length(studentdata_comp$female_35mm.factor),
+                               female_4mm.factor = sum(studentdata_comp$female_4mm.factor=="Yes")/length(studentdata_comp$female_4mm.factor))
+        
+                
+student_long <- melt(student_response)                
+student_long$Respondent <- "Student"
+student_long$Asymmetry <- rep(c("Symmetric", "1 mm", "1.5 mm", "2 mm", "2.5 mm", "3 mm", "3.5 mm", "4 mm"), 2)
+student_long$Asymmetry <- factor(student_long$Asymmetry, levels = c("Symmetric", "1 mm", "1.5 mm", "2 mm", "2.5 mm", "3 mm", "3.5 mm", "4 mm"))
+student_long$Image_gender <- c(rep("Male", 8), rep("Female", 8))
+student_long$Image_gender <- factor(student_long$Image_gender, levels = c("Male", "Female"))
+
+
+```
+
+#### Medicine vs Pharmacy Students
+
+```{r}
+student_specific_response <- data.frame(#Medicine
+							   ##Male Photo
+							   male_sym.factor = sum(studentdata_comp$male_sym.factor[studentdata_comp$group.factor=="Medicine"]=="No")/length(studentdata_comp$male_sym.factor[studentdata_comp$group.factor=="Medicine"]),
+                               male_1mm.factor = sum(studentdata_comp$male_1mm.factor[studentdata_comp$group.factor=="Medicine"]=="Yes")/length(studentdata_comp$male_1mm.factor[studentdata_comp$group.factor=="Medicine"]),
+                               male_1.5mm.factor = sum(studentdata_comp$male_15mm.factor[studentdata_comp$group.factor=="Medicine"]=="Yes")/length(studentdata_comp$male_15mm.factor[studentdata_comp$group.factor=="Medicine"]),
+                               male_2mm.factor = sum(studentdata_comp$male_2mm.factor[studentdata_comp$group.factor=="Medicine"]=="Yes")/length(studentdata_comp$male_2mm.factor[studentdata_comp$group.factor=="Medicine"]),
+                               male_2.5mm.factor = sum(studentdata_comp$male_25mm.factor[studentdata_comp$group.factor=="Medicine"]=="Yes")/length(studentdata_comp$male_25mm.factor[studentdata_comp$group.factor=="Medicine"]),
+                               male_3mm.factor = sum(studentdata_comp$male_3mm.factor[studentdata_comp$group.factor=="Medicine"]=="Yes")/length(studentdata_comp$male_3mm.factor[studentdata_comp$group.factor=="Medicine"]),
+                               male_3.5mm.factor = sum(studentdata_comp$male_35mm.factor[studentdata_comp$group.factor=="Medicine"]=="Yes")/length(studentdata_comp$male_35mm.factor[studentdata_comp$group.factor=="Medicine"]),
+                               male_4mm.factor = sum(studentdata_comp$male_4mm.factor[studentdata_comp$group.factor=="Medicine"]=="Yes")/length(studentdata_comp$male_4mm.factor[studentdata_comp$group.factor=="Medicine"]),
+                               
+							   ##Female Photo
+                               female_sym.factor = sum(studentdata_comp$female_symm.factor[studentdata_comp$group.factor=="Medicine"]=="No")/length(studentdata_comp$female_symm.factor[studentdata_comp$group.factor=="Medicine"]),
+                               female_1mm.factor = sum(studentdata_comp$female_1mm.factor[studentdata_comp$group.factor=="Medicine"]=="Yes")/length(studentdata_comp$female_1mm.factor[studentdata_comp$group.factor=="Medicine"]),
+                               female_1.5mm.factor = sum(studentdata_comp$female_15mm.factor[studentdata_comp$group.factor=="Medicine"]=="Yes")/length(studentdata_comp$female_15mm.factor[studentdata_comp$group.factor=="Medicine"]),
+                               female_2mm.factor = sum(studentdata_comp$female_2mm.factor[studentdata_comp$group.factor=="Medicine"]=="Yes")/length(studentdata_comp$female_2mm.factor[studentdata_comp$group.factor=="Medicine"]),
+                               female_2.5mm.factor = sum(studentdata_comp$female_25.factor[studentdata_comp$group.factor=="Medicine"]=="Yes")/length(studentdata_comp$female_25.factor[studentdata_comp$group.factor=="Medicine"]),
+                               female_3mm.factor = sum(studentdata_comp$female_3mm.factor[studentdata_comp$group.factor=="Medicine"]=="Yes")/length(studentdata_comp$female_3mm.factor[studentdata_comp$group.factor=="Medicine"]),
+                               female_3.5mm.factor = sum(studentdata_comp$female_35mm.factor[studentdata_comp$group.factor=="Medicine"]=="Yes")/length(studentdata_comp$female_35mm.factor[studentdata_comp$group.factor=="Medicine"]),
+                               female_4mm.factor = sum(studentdata_comp$female_4mm.factor[studentdata_comp$group.factor=="Medicine"]=="Yes")/length(studentdata_comp$female_4mm.factor[studentdata_comp$group.factor=="Medicine"]),
+							   
+							   #Pharmacy
+							   ##Male Photo
+							   male_sym.factor = sum(studentdata_comp$male_sym.factor[studentdata_comp$group.factor=="Pharmacy"]=="No")/length(studentdata_comp$male_sym.factor[studentdata_comp$group.factor=="Pharmacy"]),
+                               male_1mm.factor = sum(studentdata_comp$male_1mm.factor[studentdata_comp$group.factor=="Pharmacy"]=="Yes")/length(studentdata_comp$male_1mm.factor[studentdata_comp$group.factor=="Pharmacy"]),
+                               male_1.5mm.factor = sum(studentdata_comp$male_15mm.factor[studentdata_comp$group.factor=="Pharmacy"]=="Yes")/length(studentdata_comp$male_15mm.factor[studentdata_comp$group.factor=="Pharmacy"]),
+                               male_2mm.factor = sum(studentdata_comp$male_2mm.factor[studentdata_comp$group.factor=="Pharmacy"]=="Yes")/length(studentdata_comp$male_2mm.factor[studentdata_comp$group.factor=="Pharmacy"]),
+                               male_2.5mm.factor = sum(studentdata_comp$male_25mm.factor[studentdata_comp$group.factor=="Pharmacy"]=="Yes")/length(studentdata_comp$male_25mm.factor[studentdata_comp$group.factor=="Pharmacy"]),
+                               male_3mm.factor = sum(studentdata_comp$male_3mm.factor[studentdata_comp$group.factor=="Pharmacy"]=="Yes")/length(studentdata_comp$male_3mm.factor[studentdata_comp$group.factor=="Pharmacy"]),
+                               male_3.5mm.factor = sum(studentdata_comp$male_35mm.factor[studentdata_comp$group.factor=="Pharmacy"]=="Yes")/length(studentdata_comp$male_35mm.factor[studentdata_comp$group.factor=="Pharmacy"]),
+                               male_4mm.factor = sum(studentdata_comp$male_4mm.factor[studentdata_comp$group.factor=="Pharmacy"]=="Yes")/length(studentdata_comp$male_4mm.factor[studentdata_comp$group.factor=="Pharmacy"]),
+                               
+							   ##Female Photo
+                               female_sym.factor = sum(studentdata_comp$female_symm.factor[studentdata_comp$group.factor=="Pharmacy"]=="No")/length(studentdata_comp$female_symm.factor[studentdata_comp$group.factor=="Pharmacy"]),
+                               female_1mm.factor = sum(studentdata_comp$female_1mm.factor[studentdata_comp$group.factor=="Pharmacy"]=="Yes")/length(studentdata_comp$female_1mm.factor[studentdata_comp$group.factor=="Pharmacy"]),
+                               female_1.5mm.factor = sum(studentdata_comp$female_15mm.factor[studentdata_comp$group.factor=="Pharmacy"]=="Yes")/length(studentdata_comp$female_15mm.factor[studentdata_comp$group.factor=="Pharmacy"]),
+                               female_2mm.factor = sum(studentdata_comp$female_2mm.factor[studentdata_comp$group.factor=="Pharmacy"]=="Yes")/length(studentdata_comp$female_2mm.factor[studentdata_comp$group.factor=="Pharmacy"]),
+                               female_2.5mm.factor = sum(studentdata_comp$female_25.factor[studentdata_comp$group.factor=="Pharmacy"]=="Yes")/length(studentdata_comp$female_25.factor[studentdata_comp$group.factor=="Pharmacy"]),
+                               female_3mm.factor = sum(studentdata_comp$female_3mm.factor[studentdata_comp$group.factor=="Pharmacy"]=="Yes")/length(studentdata_comp$female_3mm.factor[studentdata_comp$group.factor=="Pharmacy"]),
+                               female_3.5mm.factor = sum(studentdata_comp$female_35mm.factor[studentdata_comp$group.factor=="Pharmacy"]=="Yes")/length(studentdata_comp$female_35mm.factor[studentdata_comp$group.factor=="Pharmacy"]),
+                               female_4mm.factor = sum(studentdata_comp$female_4mm.factor[studentdata_comp$group.factor=="Pharmacy"]=="Yes")/length(studentdata_comp$female_4mm.factor[studentdata_comp$group.factor=="Pharmacy"])
+							   
+							   )
+      
+student_specific_response_long <- melt(student_specific_response)                
+student_specific_response_long$Specialty <- c(rep("Medicine", 16), rep("Pharmacy", 16))
+student_specific_response_long$Asymmetry <- rep(c("Symmetric", "1 mm", "1.5 mm", "2 mm", "2.5 mm", "3 mm", "3.5 mm", "4 mm"), 4)
+student_specific_response_long$Asymmetry <- factor(student_specific_response_long$Asymmetry, levels = c("Symmetric", "1 mm", "1.5 mm", "2 mm", "2.5 mm", "3 mm", "3.5 mm", "4 mm"))
+student_specific_response_long$Image_gender <- rep(c(rep("Male", 8), rep("Female", 8)),2)
+student_specific_response_long$Image_gender <- factor(student_specific_response_long$Image_gender, levels = c("Male", "Female"))
+
+
+#without baseline
+student_specific_response_long <- student_specific_response_long[-which(student_specific_response_long$Asymmetry=="Symmetric"),]
+  
+ggplot(student_specific_response_long, aes(x = Asymmetry, y = value, color = Specialty, group = Specialty)) +
+  geom_line(size=2)+
+  geom_point(size=5)+
+  facet_grid(Image_gender ~ ., scales = "free", space = "free") +
+  scale_color_discrete(name="Lay Persons", labels=c("Medical Students", "Pharmacy Students"))+
+  scale_y_continuous(limits=c(0,1), labels=c(0,25,50,75,100))+
+  xlab("Asymmetry") +
+  ylab("Percentage of Correct Response") +
+  theme_minimal() +
+  theme_bw() +
+  theme(axis.text.x = element_text(size=15,
+	                                 angle = 45, 
+                                   #margin = ggplot2::margin(t = 35),
+                                   hjust = 1
+	                                 ),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20),
+        strip.text.y = element_text(size = 15),
+        legend.text=element_text(size=15),
+        legend.title=element_text(size=20),
+	      plot.title = element_text(size=20))
+```
+
+
+###Combined Clinicians vs Students
+
+```{r}
+combined_long <- rbind.data.frame(clinician_long,student_long)
+combined_long$Respondent <- factor(combined_long$Respondent, levels = c("Clinician", "Student"))
+
+#without baseline
+combined_long <- combined_long[-which(combined_long$Asymmetry=="Symmetric"),]
+
+ggplot(combined_long, aes(x = Asymmetry, y = value, color = Respondent, group = Respondent)) +
+  geom_line(size=2)+
+  geom_point(size=5)+
+  facet_grid(Image_gender ~ ., scales = "free", space = "free") +
+  scale_color_discrete(name="Respondent\nClass", labels=c("Clinicians", "Lay Persons"))+
+  scale_y_continuous(limits=c(0,1), labels=c(0,25,50,75,100))+
+  xlab("Asymmetry") +
+  ylab("Percentage of Correct Response") +
+  theme_minimal() +
+  theme_bw() +
+  theme(axis.text.x = element_text(size=15,
+	                                 angle = 45, 
+                                   #margin = ggplot2::margin(t = 35),
+                                   hjust = 1
+	                                 ),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20),
+        strip.text.y = element_text(size = 15),
+        legend.text=element_text(size=15),
+        legend.title=element_text(size=20),
+	      plot.title = element_text(size=20))
+
+#unstratified
+mean_long_u <- aggregate(combined_long[,2], list(combined_long$Respondent,combined_long$Asymmetry), mean)
+sd_long_u <- aggregate(combined_long[,2], list(combined_long$Respondent,combined_long$Asymmetry),sd)
+combined_long_u <- cbind.data.frame(mean_long_u,sd_long_u$x)
+
+ggplot(combined_long_u, aes(x = Group.2, y = x, color = Group.1, group = Group.1)) +
+    geom_line(size=1.5, position = position_dodge(.9))+
+    geom_point(size=4, position=position_dodge(width = .9))+
+    geom_errorbar(aes(ymin=x-sd_long_u$x, ymax=x+sd_long_u$x), position=position_dodge(width=.9))+
+    scale_color_discrete(name="Respondent Class")+
+    xlab("Asymmetry") +
+    ylab("Probability of Correct Response") +
+    theme_minimal() +
+    theme_bw() +
+    theme(axis.text.x = element_text(size=15,
+                                     angle = 45, 
+                                     #margin = ggplot2::margin(t = 35),
+                                     hjust = 1
+    ),
+    axis.text.y = element_text(size = 15),
+    axis.title.x = element_text(size = 20),
+    axis.title.y = element_text(size = 20),
+    legend.text=element_text(size=15),
+    legend.title=element_text(size=20),
+    plot.title = element_text(size=20))
+```
+

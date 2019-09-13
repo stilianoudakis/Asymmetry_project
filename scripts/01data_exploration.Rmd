@@ -1,0 +1,183 @@
+---
+title: "Data Exploration"
+author: "Spiro Stilianoudakis"
+date: "March 29, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Loading Libraries
+
+```{r}
+library(openxlsx)
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+```
+
+#Setting Working Directory
+
+```{r}
+setwd("X:/CommonPrograms/Oral Health Services Research Core/Spiro/Asymmetry")
+```
+
+
+#Clinician Data
+
+##Loading data
+
+```{r}
+cliniciandata <- readRDS("cliniciandata.rds")
+```
+
+##Data Exploration for Clinicians
+
+```{r}
+dim(cliniciandata)
+#213  43
+
+names(cliniciandata)
+
+#keeping only the factor variables
+cliniciandata <- cliniciandata[,c(1,grep(".factor", names(cliniciandata)))]
+dim(cliniciandata)
+#213 21
+
+#remove my_first_instrument_complete.factor variable
+cliniciandata <- cliniciandata[,-21]
+
+#ordering columns accoring to gender and increasing assymetry
+cliniciandata <- cliniciandata[,c(1:4, #demo vars
+                                               7,12,9,5,8,11,6,10, #male subject
+                                               18,19,15,13,16,14,17,20)] #female subject
+names(cliniciandata)
+
+#looking at missing data
+lapply(cliniciandata, function(x){sum(is.na(x))})
+
+#complete cases data
+cliniciandata_comp <- cliniciandata[complete.cases(cliniciandata),]
+dim(cliniciandata_comp)
+#173  20
+
+#removing rows with missing values for all columns
+cliniciandata_notcomp <- cliniciandata[-which(apply(cliniciandata[,-1],1,function(x){sum(is.na(x))})==19),]
+dim(cliniciandata_notcomp)
+#206  20
+
+#further removing rows with missing demographic characteristics
+cliniciandata_notcomp <- cliniciandata_notcomp[complete.cases(cliniciandata_notcomp[,2:4]),]
+dim(cliniciandata_notcomp)
+#201  20
+
+#further removing rows with all missing male ratings or all missing female ratings
+cliniciandata_notcomp <- cliniciandata_notcomp[-which(apply(cliniciandata_notcomp[,5:12],1,function(x){sum(is.na(x))})==8 |
+                                                        apply(cliniciandata_notcomp[,13:20],1,function(x){sum(is.na(x))})==8),]
+dim(cliniciandata_notcomp)
+#183 20
+```
+
+##Tables
+
+```{r}
+lapply(cliniciandata_notcomp[,-1], function(x){table(x, exclude = "ifany")})
+```
+
+## Saving clinician datasets
+
+```{r}
+#reordering mm columns in ascending order
+cliniciandata_comp <- cliniciandata_comp[,c(1:4,5,10:12,6:9,13,18:20,14:17)]
+cliniciandata_notcomp <- cliniciandata_notcomp[,c(1:4,5,10:12,6:9,13,18:20,14:17)]
+
+#remove clinician with prefer not to answer for gender for complete cases
+cliniciandata_comp$gender.factor <- factor(as.character(cliniciandata_comp$gender.factor))
+
+saveRDS(cliniciandata_notcomp, "cliniciandata_notcomp.rds")
+saveRDS(cliniciandata_comp, "cliniciandata_comp.rds")
+```
+
+#Students
+
+##Loading data
+
+```{r}
+studentdata <- readRDS("studentdata.rds")
+```
+
+##Data Exploration for Clinicians
+
+```{r}
+dim(studentdata)
+#202  47
+
+names(studentdata)
+
+#keeping only the factor variables
+studentdata <- studentdata[,c(1,grep(".factor", names(studentdata)))]
+dim(studentdata)
+#202 23
+
+#remove my_first_instrument_complete.factor variable
+studentdata <- studentdata[,-23]
+
+#ordering columns accoring to gender and increasing assymetry
+studentdata <- studentdata[,c(1:6, #demo vars
+                                               9,14,11,7,10,13,8,12, #male subject
+                                               20,21,17,15,18,16,19,22)] #female subject
+names(studentdata)
+
+#looking at missing data
+lapply(studentdata, function(x){sum(is.na(x))})
+
+#complete cases data
+studentdata_comp <- studentdata[complete.cases(studentdata),]
+dim(studentdata_comp)
+#123  22
+
+#removing rows with missing values for all columns
+studentdata_notcomp <- studentdata[-which(apply(studentdata[,-1],1,function(x){sum(is.na(x))})==21),]
+dim(studentdata_notcomp)
+#193  22
+
+#further removing rows with missing demographic characteristics
+studentdata_notcomp <- studentdata_notcomp[complete.cases(studentdata_notcomp[,2:6]),]
+dim(studentdata_notcomp)
+#191  22
+
+#further removing rows with all missing male ratings or all missing female ratings
+studentdata_notcomp <- studentdata_notcomp[-which(apply(studentdata_notcomp[,7:14],1,function(x){sum(is.na(x))})==8 |
+                                                        apply(studentdata_notcomp[,15:22],1,function(x){sum(is.na(x))})==8),]
+dim(studentdata_notcomp)
+#124 22
+```
+
+##Tables
+
+```{r}
+lapply(studentdata_notcomp[,-1], function(x){table(x, exclude = "ifany")})
+```
+
+## Saving student datasets
+
+```{r}
+#reordering mm columns in ascending order
+studentdata_comp <- studentdata_comp[,c(1:6,7,12:14,8:11,15,20:22,16:19)]
+studentdata_notcomp <- studentdata_notcomp[,c(1:6,7,12:14,8:11,15,20:22,16:19)]
+
+#remove clinician with prefer not to answer for gender
+studentdata_comp$gender.factor <- factor(as.character(studentdata_comp$gender.factor))
+ 
+#recode age group; combine 27-28, 29-30, and >30
+studentdata_comp$age.factor <- as.character(studentdata_comp$age.factor)
+studentdata_comp$age.factor[which(studentdata_comp$age.factor=="27-28" |
+                                    studentdata_comp$age.factor=="29-30" |
+                                    studentdata_comp$age.factor==">30")] <- ">26"
+studentdata_comp$age.factor <- factor(studentdata_comp$age.factor, levels=c("21-22", "23-24", "25-26", ">26"))
+
+saveRDS(studentdata_notcomp, "studentdata_notcomp.rds")
+saveRDS(studentdata_comp, "studentdata_comp.rds")
+```
